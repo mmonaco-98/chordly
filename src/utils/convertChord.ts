@@ -16,6 +16,13 @@ function convertNote(note: string): string {
   return (INT_TO_IT[base] ?? base) + acc
 }
 
+function minorToHyphen(rest: string): string {
+  if (rest.startsWith('m') && !rest.startsWith('maj')) {
+    return '-' + rest.slice(1)
+  }
+  return rest
+}
+
 export function convertChord(chord: string, to: ChordNotation): string {
   if (!chord || to === 'international') return chord
 
@@ -30,9 +37,9 @@ export function convertChord(chord: string, to: ChordNotation): string {
     const bass = rest.slice(slashIdx + 1)
     const bassMatch = bass.match(/^([A-G][#b]?)(.*)$/)
     if (bassMatch) {
-      return convertNote(root) + quality + '/' + convertNote(bassMatch[1]) + bassMatch[2]
+      return convertNote(root) + minorToHyphen(quality) + '/' + convertNote(bassMatch[1]) + minorToHyphen(bassMatch[2])
     }
   }
 
-  return convertNote(root) + rest
+  return convertNote(root) + minorToHyphen(rest)
 }

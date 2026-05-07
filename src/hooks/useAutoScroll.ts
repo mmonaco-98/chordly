@@ -38,13 +38,19 @@ export function useAutoScroll() {
       return
     }
     const pxPerFrame = speed * 0.15
+    let acc = 0
     const tick = () => {
       const maxY = document.documentElement.scrollHeight - window.innerHeight
       if (window.scrollY >= maxY) {
         setIsScrolling(false)
         return
       }
-      window.scrollBy(0, pxPerFrame)
+      acc += pxPerFrame
+      if (acc >= 1) {
+        const toScroll = Math.floor(acc)
+        acc -= toScroll
+        window.scrollBy(0, toScroll)
+      }
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)

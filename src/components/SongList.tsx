@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, Settings2, X } from "lucide-react";
-import songs from "../songs";
+import { Menu, Settings2, X, Plus } from "lucide-react";
 import { SongCard } from "./SongCard";
 import { TagDrawer, labelForTag } from "./TagDrawer";
 import { usePlaylists } from "../hooks/usePlaylists";
+import { useSongs } from "../hooks/useSongs";
+import type { Song } from "../types";
 
 interface LetterGroup {
   letter: string;
-  items: typeof songs;
+  items: Song[];
 }
 
 export function SongList() {
+  const songs = useSongs();
   const [query, setQuery] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export function SongList() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
 
-  const { playlists, createPlaylist, deletePlaylist } = usePlaylists();
+  const { playlists, createPlaylist, deletePlaylist, reorderPlaylists } = usePlaylists();
 
   const allTags = [...new Set(songs.flatMap((s) => s.tags ?? []))].sort();
 
@@ -51,7 +53,10 @@ export function SongList() {
 
   const showSidebar = !query && groups.length > 1;
 
-  const scrollToLetter = (letter: string, behavior: ScrollBehavior = "smooth") => {
+  const scrollToLetter = (
+    letter: string,
+    behavior: ScrollBehavior = "smooth",
+  ) => {
     document
       .getElementById(`letter-${letter}`)
       ?.scrollIntoView({ behavior, block: "start" });
@@ -95,7 +100,8 @@ export function SongList() {
       const firstRect = entries[0][1].getBoundingClientRect();
       const lastRect = entries[entries.length - 1][1].getBoundingClientRect();
       if (clientY < firstRect.top) found = entries[0][0];
-      else if (clientY > lastRect.bottom) found = entries[entries.length - 1][0];
+      else if (clientY > lastRect.bottom)
+        found = entries[entries.length - 1][0];
     }
     if (found !== activeLetterRef.current) {
       activeLetterRef.current = found;
@@ -104,20 +110,26 @@ export function SongList() {
     }
   }, []);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
-    isDragging.current = true;
-    setSidebarVisible(true);
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    if (tooltipRef.current) tooltipRef.current.style.top = `${e.clientY}px`;
-    updateActiveLetter(e.clientY);
-  }, [updateActiveLetter]);
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      isDragging.current = true;
+      setSidebarVisible(true);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      e.currentTarget.setPointerCapture(e.pointerId);
+      if (tooltipRef.current) tooltipRef.current.style.top = `${e.clientY}px`;
+      updateActiveLetter(e.clientY);
+    },
+    [updateActiveLetter],
+  );
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
-    if (!isDragging.current) return;
-    if (tooltipRef.current) tooltipRef.current.style.top = `${e.clientY}px`;
-    updateActiveLetter(e.clientY);
-  }, [updateActiveLetter]);
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (!isDragging.current) return;
+      if (tooltipRef.current) tooltipRef.current.style.top = `${e.clientY}px`;
+      updateActiveLetter(e.clientY);
+    },
+    [updateActiveLetter],
+  );
 
   const handlePointerUp = useCallback(() => {
     if (!isDragging.current) return;
@@ -148,6 +160,7 @@ export function SongList() {
         playlists={playlists}
         onCreatePlaylist={createPlaylist}
         onDeletePlaylist={deletePlaylist}
+        onReorderPlaylists={reorderPlaylists}
       />
 
       <header className="song-list__header">
@@ -155,12 +168,19 @@ export function SongList() {
           <button
             className="icon-btn"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Apri canzonieri"
+            aria-label="Apri menu"
           >
             <Menu size={20} />
           </button>
           <h1 className="song-list__title">Chordly</h1>
           <div style={{ display: "flex", gap: "0.25rem" }}>
+            <button
+              className="icon-btn"
+              onClick={() => navigate("/song/new")}
+              aria-label="Aggiungi canzone"
+            >
+              <Plus size={20} />
+            </button>
             <button
               className="icon-btn"
               onClick={() => navigate("/settings")}
@@ -193,10 +213,7 @@ export function SongList() {
         </div>
       </header>
 
-      <ul
-        className="song-list__list"
-        role="list"
-      >
+      <ul className="song-list__list" role="list">
         {filtered.length === 0 ? (
           <li className="song-list__empty">Nessuna canzone trovata</li>
         ) : (
@@ -211,7 +228,10 @@ export function SongList() {
               <ul role="list" className="song-list__letter-group">
                 {items.map((song) => (
                   <li key={song.id}>
-                    <SongCard song={song} navState={{ source: 'list', tag: activeTag }} />
+                    <SongCard
+                      song={song}
+                      navState={{ source: "list", tag: activeTag }}
+                    />
                   </li>
                 ))}
               </ul>
@@ -222,36 +242,36 @@ export function SongList() {
 
       {showSidebar && (
         <>
-        <div
-          ref={tooltipRef}
-          className={`alpha-sidebar__tooltip${activeLetter ? " alpha-sidebar__tooltip--visible" : ""}`}
-          aria-hidden="true"
-        >
-          {activeLetter ?? ""}
-        </div>
-        <nav
-          className={`alpha-sidebar${sidebarVisible ? "" : " alpha-sidebar--hidden"}`}
-          aria-label="Indice alfabetico"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          style={{ touchAction: "none" }}
-        >
-          {groups.map(({ letter }) => (
-            <button
-              key={letter}
-              ref={(el) => {
-                if (el) btnRefs.current.set(letter, el);
-                else btnRefs.current.delete(letter);
-              }}
-              className={`alpha-sidebar__btn${activeLetter === letter ? " alpha-sidebar__btn--active" : ""}`}
-              aria-label={`Vai alla lettera ${letter}`}
-            >
-              {letter}
-            </button>
-          ))}
-        </nav>
+          <div
+            ref={tooltipRef}
+            className={`alpha-sidebar__tooltip${activeLetter ? " alpha-sidebar__tooltip--visible" : ""}`}
+            aria-hidden="true"
+          >
+            {activeLetter ?? ""}
+          </div>
+          <nav
+            className={`alpha-sidebar${sidebarVisible ? "" : " alpha-sidebar--hidden"}`}
+            aria-label="Indice alfabetico"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            style={{ touchAction: "none" }}
+          >
+            {groups.map(({ letter }) => (
+              <button
+                key={letter}
+                ref={(el) => {
+                  if (el) btnRefs.current.set(letter, el);
+                  else btnRefs.current.delete(letter);
+                }}
+                className={`alpha-sidebar__btn${activeLetter === letter ? " alpha-sidebar__btn--active" : ""}`}
+                aria-label={`Vai alla lettera ${letter}`}
+              >
+                {letter}
+              </button>
+            ))}
+          </nav>
         </>
       )}
     </div>

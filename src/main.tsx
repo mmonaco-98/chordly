@@ -5,7 +5,6 @@ import App from './App'
 import '@fontsource-variable/inter'
 import './index.css'
 
-// iOS ignores user-scalable=no in the viewport meta; block pinch-to-zoom via JS
 document.addEventListener('touchmove', (e) => {
   if (e.touches.length > 1) e.preventDefault()
 }, { passive: false })

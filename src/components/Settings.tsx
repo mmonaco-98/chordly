@@ -3,12 +3,19 @@ import { ChevronLeft, Sun, Moon, ZoomOut, ZoomIn } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useFontSize } from '../hooks/useFontSize'
 import { useChordNotation } from '../hooks/useChordNotation'
+import { clearCache } from '../api/cacheStore'
 
 export function Settings() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const { fontSize, increase, decrease } = useFontSize()
   const { notation, toggle: toggleNotation } = useChordNotation()
+
+  const handleClearCache = () => {
+    if (!confirm('Cancellare la cache locale?')) return
+    clearCache()
+    location.reload()
+  }
 
   return (
     <div className="settings">
@@ -69,6 +76,16 @@ export function Settings() {
           <p className="settings__preview" style={{ fontSize: `${fontSize}px` }}>
             [Am]Testo di <span style={{ color: 'var(--chord)', fontWeight: 700 }}>esempio</span> con accordi
           </p>
+        </section>
+
+        <section className="settings__section">
+          <h2 className="settings__section-title">Cache</h2>
+          <div className="settings__row">
+            <span className="settings__row-label">Cancella cache locale</span>
+            <button className="icon-btn" onClick={handleClearCache} aria-label="Cancella cache">
+              <ZoomOut size={20} />
+            </button>
+          </div>
         </section>
       </main>
     </div>

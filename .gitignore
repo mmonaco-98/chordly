@@ -4,3 +4,15 @@ dist
 *.local
 certs/
 CLAUDE.md
+src/songs/*.json
+server/data/
+server/node_modules/
+server/dist/
+.env.worktrees/
+.env
+.env2
+.agents
+docs
+!docs/superpowers/
+!docs/suppressions/
+.worktrees/

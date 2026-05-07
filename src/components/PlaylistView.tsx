@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   DndContext,
@@ -7,6 +8,8 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
+  type DragOverEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -14,15 +17,20 @@ import {
   useSortable,
   arrayMove,
 } from '@dnd-kit/sortable'
-import { ChevronLeft, ChevronRight, GripVertical, Music2, Trash2 } from 'lucide-react'
-import songs from '../songs'
+import { ChevronLeft, ChevronRight, GripVertical, Music2, Plus, Trash2 } from 'lucide-react'
+import { useSongs } from '../hooks/useSongs'
 import type { Song } from '../types'
 import { usePlaylists, FAVORITES_ID, FAVORITES_NAME } from '../hooks/usePlaylists'
+import { AddSongsModal } from './AddSongsModal'
 
 export function PlaylistView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { playlists, deletePlaylist, reorderSongs } = usePlaylists()
+  const songs = useSongs()
+  const { playlists, addSongs, deletePlaylist, reorderSongs } = usePlaylists()
+  const [showAddSongs, setShowAddSongs] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
 
   const playlist =
     playlists.find((p) => p.id === id) ??
@@ -54,7 +62,17 @@ export function PlaylistView() {
 
   const isFavorites = id === FAVORITES_ID
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverId(event.over?.id as string ?? null)
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null)
+    setOverId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = playlist.songIds.indexOf(active.id as string)
@@ -62,6 +80,15 @@ export function PlaylistView() {
     if (oldIndex === -1 || newIndex === -1) return
     reorderSongs(playlist.id, arrayMove(playlist.songIds, oldIndex, newIndex))
   }
+
+  const projectedIds =
+    activeId && overId && activeId !== overId
+      ? arrayMove(
+          playlist.songIds,
+          playlist.songIds.indexOf(activeId),
+          playlist.songIds.indexOf(overId)
+        )
+      : playlist.songIds
 
   return (
     <div className="playlist-view">
@@ -73,6 +100,13 @@ export function PlaylistView() {
           <h1 className="playlist-view__title">{playlist.name}</h1>
           <p className="playlist-view__count">{playlistSongs.length} canzoni</p>
         </div>
+        <button
+          className="icon-btn"
+          onClick={() => setShowAddSongs(true)}
+          aria-label="Aggiungi canzoni alla playlist"
+        >
+          <Plus size={20} />
+        </button>
         {!isFavorites && (
           <button
             className="icon-btn"
@@ -88,18 +122,23 @@ export function PlaylistView() {
         <div className="playlist-view__empty">
           <Music2 size={40} className="playlist-view__empty-icon" />
           <p>Nessuna canzone in questa playlist.</p>
-          <p className="playlist-view__empty-hint">
-            Aggiungile dalla vista canzone con ♡ o ⊞
-          </p>
+          <button
+            className="playlist-view__add-btn"
+            onClick={() => setShowAddSongs(true)}
+          >
+            <Plus size={18} />
+            Aggiungi canzoni
+          </button>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
           <SortableContext items={playlist.songIds} strategy={verticalListSortingStrategy}>
             <ul className="playlist-view__list" role="list">
               {playlistSongs.map((song) => (
                 <SortableSongItem
                   key={song.id}
                   song={song}
+                  index={projectedIds.indexOf(song.id) + 1}
                   onTap={() => navigate(`/song/${song.id}`, { state: { source: 'playlist', playlistId: id } })}
                 />
               ))}
@@ -107,17 +146,28 @@ export function PlaylistView() {
           </SortableContext>
         </DndContext>
       )}
+
+      {showAddSongs && (
+        <AddSongsModal
+          existingSongIds={playlist.songIds}
+          onConfirm={(ids) => {
+            addSongs(playlist.id, ids)
+            setShowAddSongs(false)
+          }}
+          onClose={() => setShowAddSongs(false)}
+        />
+      )}
     </div>
   )
 }
 
-function SortableSongItem({ song, onTap }: { song: Song; onTap: () => void }) {
+function SortableSongItem({ song, index, onTap }: { song: Song; index: number; onTap: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: song.id })
 
   const style: React.CSSProperties = {
     transform: transform
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0) scaleX(${transform.scaleX ?? 1}) scaleY(${transform.scaleY ?? 1})`
+      ? `translate3d(0px, ${transform.y}px, 0) scaleY(${transform.scaleY ?? 1})`
       : undefined,
     transition,
     zIndex: isDragging ? 10 : undefined,
@@ -130,6 +180,14 @@ function SortableSongItem({ song, onTap }: { song: Song; onTap: () => void }) {
       style={style}
       className={`playlist-item${isDragging ? ' playlist-item--dragging' : ''}`}
     >
+      <span className="playlist-item__index">{index}</span>
+      <button className="playlist-item__body" onClick={onTap}>
+        <div className="playlist-item__text">
+          <span className="playlist-item__title">{song.title}</span>
+          <span className="playlist-item__artist">{song.artist}</span>
+        </div>
+        <ChevronRight size={16} className="playlist-item__chevron" />
+      </button>
       <button
         className="playlist-item__handle"
         aria-label="Trascina per riordinare"
@@ -137,13 +195,6 @@ function SortableSongItem({ song, onTap }: { song: Song; onTap: () => void }) {
         {...listeners}
       >
         <GripVertical size={20} />
-      </button>
-      <button className="playlist-item__body" onClick={onTap}>
-        <div className="playlist-item__text">
-          <span className="playlist-item__title">{song.title}</span>
-          <span className="playlist-item__artist">{song.artist}</span>
-        </div>
-        <ChevronRight size={16} className="playlist-item__chevron" />
       </button>
     </li>
   )

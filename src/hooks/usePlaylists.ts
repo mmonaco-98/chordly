@@ -1,45 +1,47 @@
-import { useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import type { Playlist } from '../types'
+import { subscribe } from '../api/cacheStore'
+import {
+  PLAYLISTS_KEY,
+  createPlaylist,
+  deletePlaylist,
+  getCachedPlaylists,
+  refreshPlaylists,
+  reorderPlaylists,
+  updatePlaylist,
+} from '../api/playlistsRepo'
 
 export const FAVORITES_ID = '__fav__'
 export const FAVORITES_NAME = 'Preferiti'
 
-const KEY = 'playlists'
-
-function loadPlaylists(): Playlist[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '[]')
-  } catch {
-    return []
-  }
-}
-
 export function usePlaylists() {
-  const [playlists, setPlaylists] = useState<Playlist[]>(loadPlaylists)
+  const playlists = useSyncExternalStore(
+    (listener) => subscribe(PLAYLISTS_KEY, listener),
+    () => getCachedPlaylists(),
+    () => getCachedPlaylists(),
+  )
 
-  const save = (next: Playlist[]) => {
-    setPlaylists(next)
-    localStorage.setItem(KEY, JSON.stringify(next))
+  useEffect(() => {
+    void refreshPlaylists().catch(() => {
+      // Offline / error — cache keeps the UI alive.
+    })
+  }, [])
+
+  const ensureFavorites = (list: Playlist[]): Playlist[] => {
+    if (list.find((p) => p.id === FAVORITES_ID)) return list
+    const fav: Playlist = { id: FAVORITES_ID, name: FAVORITES_NAME, songIds: [] }
+    void createPlaylist(fav)
+    return [fav, ...list]
   }
 
   const toggleSong = (playlistId: string, songId: string) => {
-    let list = playlists
-    if (!list.find((p) => p.id === playlistId)) {
-      // lazy-create favorites playlist
-      list = [{ id: FAVORITES_ID, name: FAVORITES_NAME, songIds: [] }, ...list]
-    }
-    save(
-      list.map((p) =>
-        p.id !== playlistId
-          ? p
-          : {
-              ...p,
-              songIds: p.songIds.includes(songId)
-                ? p.songIds.filter((id) => id !== songId)
-                : [...p.songIds, songId],
-            }
-      )
-    )
+    const list = ensureFavorites(playlists)
+    const target = list.find((p) => p.id === playlistId)
+    if (!target) return
+    const nextIds = target.songIds.includes(songId)
+      ? target.songIds.filter((id) => id !== songId)
+      : [...target.songIds, songId]
+    void updatePlaylist({ ...target, songIds: nextIds })
   }
 
   const toggleFavorite = (songId: string) => toggleSong(FAVORITES_ID, songId)
@@ -50,20 +52,36 @@ export function usePlaylists() {
   const isSongInPlaylist = (playlistId: string, songId: string) =>
     playlists.find((p) => p.id === playlistId)?.songIds.includes(songId) ?? false
 
-  const createPlaylist = (name: string): Playlist => {
+  const createPlaylistLocal = (name: string): Playlist => {
     const p: Playlist = { id: Date.now().toString(), name, songIds: [] }
-    save([...playlists, p])
+    void createPlaylist(p)
     return p
   }
 
-  const deletePlaylist = (id: string) => save(playlists.filter((p) => p.id !== id))
+  const deletePlaylistLocal = (id: string) => {
+    void deletePlaylist(id)
+  }
 
   const reorderSongs = (playlistId: string, newSongIds: string[]) => {
-    save(
-      playlists.map((p) =>
-        p.id !== playlistId ? p : { ...p, songIds: newSongIds }
-      )
-    )
+    const target = playlists.find((p) => p.id === playlistId)
+    if (!target) return
+    void updatePlaylist({ ...target, songIds: newSongIds })
+  }
+
+  const addSongs = (playlistId: string, newSongIds: string[]) => {
+    const list = ensureFavorites(playlists)
+    const target = list.find((p) => p.id === playlistId)
+    if (!target) return
+    const toAdd = newSongIds.filter((id) => !target.songIds.includes(id))
+    if (toAdd.length === 0) return
+    void updatePlaylist({ ...target, songIds: [...target.songIds, ...toAdd] })
+  }
+
+  const reorderPlaylistsLocal = (newCustomIds: string[]) => {
+    const ids = playlists.find((p) => p.id === FAVORITES_ID)
+      ? [FAVORITES_ID, ...newCustomIds]
+      : newCustomIds
+    void reorderPlaylists(ids)
   }
 
   const favorites = playlists.find((p) => p.id === FAVORITES_ID)
@@ -77,8 +95,10 @@ export function usePlaylists() {
     isFavorite,
     toggleSong,
     isSongInPlaylist,
-    createPlaylist,
-    deletePlaylist,
+    createPlaylist: createPlaylistLocal,
+    deletePlaylist: deletePlaylistLocal,
+    addSongs,
     reorderSongs,
+    reorderPlaylists: reorderPlaylistsLocal,
   }
 }
