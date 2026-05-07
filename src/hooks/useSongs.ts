@@ -3,38 +3,25 @@ import type { Song } from "../types";
 import {
   refreshSongs,
   SONGS_KEY,
-  LAST_REFRESH_KEY,
-  markRefreshed,
   createSong as createSongRepo,
   updateSong as updateSongRepo,
   deleteSong as deleteSongRepo,
 } from "../api/songsRepo";
 import { subscribe, getSnapshot } from "../api/cacheStore";
 
-const TTL_MS = 1000 * 60 * 60; // 1 ora
-
-function shouldRefresh(): boolean {
-  const lastRefresh = localStorage.getItem(LAST_REFRESH_KEY);
-  if (!lastRefresh) return true;
-  const age = Date.now() - parseInt(lastRefresh);
-  return age > TTL_MS;
-}
-
 export function useSongs(): Song[] {
   const songs = useSyncExternalStore(
     (listener) => subscribe(SONGS_KEY, listener),
-    () => getSnapshot<Song[]>(SONGS_KEY, []), // ✅ [] stabile
+    () => getSnapshot<Song[]>(SONGS_KEY, []),
     () => getSnapshot<Song[]>(SONGS_KEY, []),
   );
 
   useEffect(() => {
-    if (shouldRefresh()) {
-      void refreshSongs()
-        .then(() => markRefreshed())
-        .catch(() => {
-          // Offline / unauthorised — keep showing the cached copy.
-        });
-    }
+    // Network-first: tenta sempre BE al mount
+    void refreshSongs()
+      .catch(() => {
+        // BE fallito → resta su cache, nessun errore a UI
+      });
   }, []);
 
   return songs;
