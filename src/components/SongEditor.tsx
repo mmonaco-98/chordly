@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Save, AlertCircle } from 'lucide-react'
-import { useCreateSong } from '../hooks/useSongs'
+import { useCreateSong, useUpdateSong } from '../hooks/useSongs'
+import { useSongs } from '../hooks/useSongs'
 import type { Song } from '../types'
 import { ContentToolbar } from './ContentToolbar'
 
@@ -14,7 +15,12 @@ function slugify(text: string): string {
 
 export function SongEditor() {
   const navigate = useNavigate()
-  const { create, isPending, error } = useCreateSong()
+  const { id: songId } = useParams<{ id: string }>()
+  const isEditMode = !!songId
+  const songs = useSongs()
+  const editingSong = isEditMode ? songs.find(s => s.id === songId) : null
+  const { create, isPending: isCreating, error: createError } = useCreateSong()
+  const { update, isPending: isUpdating, error: updateError } = useUpdateSong()
   
   const [title, setTitle] = useState('')
   const [artist, setArtist] = useState('')
@@ -26,12 +32,26 @@ export function SongEditor() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (!hasManuallyEditedId && title) {
+    if (isEditMode && editingSong) {
+      setTitle(editingSong.title)
+      setArtist(editingSong.artist)
+      setKey(editingSong.key ?? '')
+      setTags(editingSong.tags?.join(', ') ?? '')
+      setId(editingSong.id)
+      setContent(editingSong.content)
+      setHasManuallyEditedId(true)
+    }
+  }, [isEditMode, editingSong])
+
+  useEffect(() => {
+    if (!hasManuallyEditedId && title && !isEditMode) {
       setId(slugify(title))
     }
-  }, [title, hasManuallyEditedId])
+  }, [title, hasManuallyEditedId, isEditMode])
 
   const isValid = title.trim() !== '' && artist.trim() !== '' && content.trim() !== ''
+  const isPending = isEditMode ? isUpdating : isCreating
+  const error = isEditMode ? updateError : createError
 
   function handleIdChange(e: React.ChangeEvent<HTMLInputElement>) {
     setId(e.target.value)
@@ -67,8 +87,13 @@ export function SongEditor() {
       content,
     }
     try {
-      await create(song)
-      navigate('/')
+      if (isEditMode) {
+        await update(song)
+        navigate(-1)
+      } else {
+        await create(song)
+        navigate('/')
+      }
     } catch {
       // error già gestito dall'hook
     }
@@ -84,7 +109,7 @@ export function SongEditor() {
         >
           <ChevronLeft size={22} />
         </button>
-        <h1 className="song-editor__title">Nuova Canzone</h1>
+        <h1 className="song-editor__title">{isEditMode ? 'Modifica Canzone' : 'Nuova Canzone'}</h1>
         <button
           className="icon-btn icon-btn--accent"
           onClick={handleSubmit}

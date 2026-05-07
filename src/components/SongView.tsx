@@ -27,6 +27,7 @@ import {
   Eye,
   EyeOff,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import ChordSheetJS, { ChordLyricsPair } from "chordsheetjs";
@@ -856,6 +857,16 @@ function SongViewContent({
               <span className="fab__label">Gestione</span>
               <div className="fab__row">
                 <button
+                  className="fab__control-btn"
+                  onClick={() => navigate(`/song/${song.id}/edit`)}
+                  aria-label="Modifica canzone"
+                >
+                  <Pencil size={16} />
+                </button>
+                <span className="fab__value" style={{ flex: 1, textAlign: "left" }}>
+                  Modifica
+                </span>
+                <button
                   className="fab__control-btn fab__control-btn--danger"
                   onClick={() => setDeleteModalOpen(true)}
                   disabled={isDeleting}
@@ -863,9 +874,6 @@ function SongViewContent({
                 >
                   <Trash2 size={16} />
                 </button>
-                <span className="fab__value" style={{ flex: 1, textAlign: "left", color: 'var(--danger)' }}>
-                  Elimina
-                </span>
               </div>
             </div>
           </div>

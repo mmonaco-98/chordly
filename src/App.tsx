@@ -17,6 +17,7 @@ export default function App() {
         <Route path="/" element={<SongList />} />
         <Route path="/song/:id" element={<SongView />} />
         <Route path="/song/new" element={<SongEditor />} />
+        <Route path="/song/:id/edit" element={<SongEditor />} />
         <Route path="/playlist/:id" element={<PlaylistView />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
