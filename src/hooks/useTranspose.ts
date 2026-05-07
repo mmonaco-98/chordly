@@ -54,28 +54,39 @@ function accidentalForKey(keyName: string): '#' | 'b' | undefined {
 }
 
 export function useTranspose(song: Song) {
+  const [initialized, setInitialized] = useState(false)
+  
+  useEffect(() => {
+    let cancelled = false
+    refreshTranspositions()
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setInitialized(true)
+      })
+    return () => { cancelled = true }
+  }, [song.id])
+
   const map = useSyncExternalStore(
     (listener) => subscribe(TRANSPOSITIONS_KEY, listener),
     () => getCachedTranspositions(),
     () => getCachedTranspositions(),
   )
 
-  useEffect(() => {
-    void refreshTranspositions().catch(() => {})
-  }, [])
-
-  const persistedSemitones = map[song.id] ?? 0
+  const persistedSemitones = initialized ? (map[song.id] ?? 0) : (map[song.id] ?? 0)
   const [displaySemitones, setDisplaySemitones] = useState(persistedSemitones)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const skipSyncRef = useRef(false)
+  const userDidInteractRef = useRef(false)
+  const pendingSaveRef = useRef(false)
 
   useEffect(() => {
-    if (skipSyncRef.current) {
-      skipSyncRef.current = false
-      return
-    }
+    userDidInteractRef.current = false
+    pendingSaveRef.current = false
+  }, [song.id])
+
+  useEffect(() => {
+    if (userDidInteractRef.current) return
     setDisplaySemitones(persistedSemitones)
-  }, [persistedSemitones])
+  }, [persistedSemitones, song.id])
 
   useEffect(() => {
     return () => {
@@ -84,17 +95,25 @@ export function useTranspose(song: Song) {
   }, [])
 
   useEffect(() => {
-    if (displaySemitones === persistedSemitones) return
-
+    if (displaySemitones === persistedSemitones) {
+      pendingSaveRef.current = false
+      return
+    }
+    if (!userDidInteractRef.current && !pendingSaveRef.current) {
+      return
+    }
     if (timerRef.current) clearTimeout(timerRef.current)
 
+    pendingSaveRef.current = true
     timerRef.current = setTimeout(() => {
+      pendingSaveRef.current = false
       void setTransposition(song.id, displaySemitones)
       timerRef.current = null
     }, 500)
   }, [displaySemitones, song.id, persistedSemitones])
 
   const update = (next: number) => {
+    userDidInteractRef.current = true
     setDisplaySemitones(next)
   }
 
@@ -124,8 +143,8 @@ export function useTranspose(song: Song) {
     up: () => update(displaySemitones + 1),
     down: () => update(displaySemitones - 1),
     reset: () => {
+      userDidInteractRef.current = true
       if (timerRef.current) clearTimeout(timerRef.current)
-      skipSyncRef.current = true
       setDisplaySemitones(0)
       void setTransposition(song.id, 0)
     },
