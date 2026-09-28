@@ -2,8 +2,16 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import fs from "fs";
+import { fileURLToPath } from "url";
+
+const pkg = JSON.parse(
+  fs.readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf-8")
+);
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server:
     process.env.VITE_USE_HTTPS === "true"
       ? {

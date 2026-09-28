@@ -401,6 +401,11 @@ button {
   color: var(--text);
 }
 
+.settings__row-value {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
 .settings__font-controls {
   display: flex;
   align-items: center;

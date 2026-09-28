@@ -87,6 +87,14 @@ export function Settings() {
             </button>
           </div>
         </section>
+
+        <section className="settings__section">
+          <h2 className="settings__section-title">Info</h2>
+          <div className="settings__row">
+            <span className="settings__row-label">Versione app</span>
+            <span className="settings__row-value">{__APP_VERSION__}</span>
+          </div>
+        </section>
       </main>
     </div>
   )
