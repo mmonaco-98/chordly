@@ -120,6 +120,8 @@ The `content` field uses **ChordPro** format: chords in `[ ]` inline before the 
 
 The workflow `.github/workflows/sync-canti.yml` runs it every day at 06:00 UTC and can be started manually from the Actions tab (optional `max_new` input). Required repository secrets: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Scheduled workflows only run from the default branch, and GitHub disables them after 60 days without repository activity (public repos); re-enable them from the Actions tab or with a commit.
 
+Known limitation: a canticristiani song you delete in the app is no longer in the DB, so the next sync sees it as new and re-imports it. Disable the workflow before running `scripts/rollback-canticristiani.sql`.
+
 ## Playlists
 
 - A special **Favorites** playlist (`__fav__`) is created lazily on first use.

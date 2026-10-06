@@ -183,6 +183,12 @@ describe('runSync', () => {
     expect(res.inserted).toBe(1)
     expect(res.skipped).toEqual([{ id: 't-999', error: 'boom' }])
   })
+  it('troppe righe inconvertibili (schema API cambiato): lancia, nessuna scrittura', async () => {
+    const db = fakeSupabase([])
+    const convertAll = (rows) => ({ songs: [], skipped: rows.map((r) => ({ id: r.id_canti, error: 'titolo vuoto' })) })
+    await expect(runSync({ supabase: db, ...base({ convertAll }) })).rejects.toThrow(/inconvertibili/)
+    expect(db.upserts).toEqual([])
+  })
   it('errore Supabase in lettura: lancia', async () => {
     const db = { from: () => { const q = { select: () => q, like: () => q, order: () => q, range: async () => ({ data: null, error: { message: 'rls' } }) }; return q } }
     await expect(runSync({ supabase: db, ...base() })).rejects.toThrow(/rls/)

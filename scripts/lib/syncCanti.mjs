@@ -2,6 +2,7 @@ import { convertCanto, bigCollections } from './convertCanto.mjs'
 
 export const MIN_API_ROWS = 1000
 export const DEFAULT_MAX_NEW = 50
+const MAX_UNCONVERTIBLE_RATIO = 0.05
 
 export function extractCantoId(id) {
   const m = /-(\d+)$/.exec(id ?? '')
@@ -95,6 +96,9 @@ export async function runSync({
 }) {
   const rows = await fetchRows()
   const { songs, skipped: unconvertible } = convertAll(rows)
+  if (unconvertible.length > rows.length * MAX_UNCONVERTIBLE_RATIO) {
+    throw new Error(`${unconvertible.length}/${rows.length} canti inconvertibili: schema API cambiato? Nessuna scrittura.`)
+  }
   const existing = await listCantiIds(supabase)
   const fresh = pickNewSongs(songs, existing)
   assertSane({ rawCount: rows.length, newCount: fresh.length, maxNew })
