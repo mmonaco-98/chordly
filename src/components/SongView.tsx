@@ -1,19 +1,13 @@
-import {
-  useState,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
+import { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
   Sun,
   Moon,
-  SlidersHorizontal,
+  Ellipsis,
   X,
+  Music2,
   Minus,
   Plus,
   RotateCcw,
@@ -148,52 +142,10 @@ function SongViewContent({
   const [hideBass, setHideBass] = useState(true);
   const [playlistModalOpen, setPlaylistModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const controlsOpenRef = useRef(controlsOpen);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    controlsOpenRef.current = controlsOpen;
-  }, [controlsOpen]);
-
-  const scheduleHide = useCallback(() => {
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (controlsOpenRef.current) return;
-    hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3000);
-  }, []);
-
-  const showControls = useCallback(() => {
-    setControlsVisible(true);
-    scheduleHide();
-  }, [scheduleHide]);
-
-  useEffect(() => {
-    scheduleHide();
-    return () => {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    };
-  }, [song.id, scheduleHide]);
-
-  useEffect(() => {
-    if (controlsOpen) {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    } else {
-      scheduleHide();
-    }
-  }, [controlsOpen, scheduleHide]);
-
-  useEffect(() => {
-    if (isScrolling) {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      setControlsOpen(false);
-      setControlsVisible(false);
-    }
+    if (isScrolling) setControlsOpen(false);
   }, [isScrolling]);
-
-  useEffect(() => {
-    window.addEventListener("pointerdown", showControls);
-    return () => window.removeEventListener("pointerdown", showControls);
-  }, [showControls]);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
@@ -207,8 +159,6 @@ function SongViewContent({
       : `${displayKey} ${semitones > 0 ? "+" : ""}${semitones}`;
 
   const songIsFavorite = isFavorite(song.id);
-  const hasBadge =
-    semitones !== 0 || capo !== 0 || isScrolling || songIsFavorite;
 
   const goToPrev = () =>
     prevSong &&
@@ -576,14 +526,17 @@ function SongViewContent({
         </button>
         <div className="song-view__meta">
           <h1 className="song-view__title">{song.title}</h1>
-          <p className="song-view__artist">
-            {song.artist}
-            <span className="song-view__key">{keyLabel}</span>
+          <p className="song-view__artist">{song.artist}</p>
+          <div className="song-view__tags">
+            <span className="song-view__key">
+              <Music2 size={12} aria-hidden="true" />
+              {keyLabel}
+            </span>
             {capo > 0 && (
               <span className="song-view__capo">Capo {toRoman(capo)}</span>
             )}
             {song.bpm && <span className="song-view__bpm">{song.bpm} BPM</span>}
-          </p>
+          </div>
         </div>
         <button
           className="icon-btn"
@@ -634,263 +587,247 @@ function SongViewContent({
         isPending={isDeleting}
       />
 
-      {/* Navigazione prev/next */}
-      {showNav && controlsVisible && (
-        <div className="song-nav">
-          <button
-            className="song-nav__btn"
-            onClick={goToPrev}
-            disabled={!prevSong}
-            aria-label="Canzone precedente"
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <button
-            className="song-nav__btn"
-            onClick={goToNext}
-            disabled={!nextSong}
-            aria-label="Canzone successiva"
-          >
-            <ChevronRight size={22} />
-          </button>
-        </div>
-      )}
-
-      {/* FAB espandibile */}
-      <div className="fab-container">
-        {controlsOpen && (
-          <div className="fab__panel fab__panel--open">
-            {/* Sezione tonalità */}
-            <div className="fab__section">
-              <span className="fab__label">Tonalità</span>
-              <div className="fab__row">
-                <button
-                  className="fab__control-btn"
-                  onClick={down}
-                  aria-label="Semitono giù"
-                >
-                  <Minus size={16} />
-                </button>
-                <span className="fab__value">{keyLabel}</span>
-                <button
-                  className="fab__control-btn"
-                  onClick={up}
-                  aria-label="Semitono su"
-                >
-                  <Plus size={16} />
-                </button>
-                <button
-                  className="fab__reset-btn"
-                  onClick={reset}
-                  aria-label="Ripristina tonalità"
-                  style={{
-                    opacity: semitones !== 0 ? 1 : 0.2,
-                    pointerEvents: semitones !== 0 ? "auto" : "none",
-                  }}
-                >
-                  <RotateCcw size={15} />
-                </button>
+      {controlsOpen && (
+        <>
+          <div
+            className="dock-scrim"
+            onClick={() => setControlsOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fab-container">
+            <div className="fab__panel">
+              <div className="fab__section">
+                <span className="fab__label">Nota basso</span>
+                <div className="fab__row">
+                  <button
+                    className={`fab__control-btn${hideBass ? " fab__control-btn--active" : ""}`}
+                    onClick={() => setHideBass((h) => !h)}
+                    aria-label={
+                      hideBass ? "Mostra nota basso" : "Nascondi nota basso"
+                    }
+                  >
+                    {hideBass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                  <span className="fab__value">
+                    {hideBass ? "Nascosta" : "Visibile"}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="fab__divider" />
+              <div className="fab__divider" />
 
-            {/* Sezione capotasto */}
-            <div className="fab__section">
-              <span className="fab__label">Capotasto</span>
-              <div className="fab__row">
-                <button
-                  className="fab__control-btn"
-                  onClick={capoDown}
-                  disabled={capo <= 0}
-                  aria-label="Capotasto giù"
-                >
-                  <Minus size={16} />
-                </button>
-                <span className="fab__value">
-                  {capo === 0 ? "—" : toRoman(capo)}
-                </span>
-                <button
-                  className="fab__control-btn"
-                  onClick={capoUp}
-                  disabled={capo >= 12}
-                  aria-label="Capotasto su"
-                >
-                  <Plus size={16} />
-                </button>
-                <button
-                  className="fab__reset-btn"
-                  onClick={resetCapo}
-                  aria-label="Ripristina capotasto"
-                  style={{
-                    opacity: capo !== 0 ? 1 : 0.2,
-                    pointerEvents: capo !== 0 ? "auto" : "none",
-                  }}
-                >
-                  <RotateCcw size={15} />
-                </button>
+              <div className="fab__section">
+                <span className="fab__label">Playlist</span>
+                <div className="fab__row">
+                  <button
+                    className={`fab__control-btn${songIsFavorite ? " fab__control-btn--active" : ""}`}
+                    onClick={() => toggleFavorite(song.id)}
+                    aria-label={
+                      songIsFavorite
+                        ? "Rimuovi dai preferiti"
+                        : "Aggiungi ai preferiti"
+                    }
+                  >
+                    <Heart
+                      size={16}
+                      fill={songIsFavorite ? "currentColor" : "none"}
+                    />
+                  </button>
+                  <span
+                    className="fab__value"
+                    style={{ flex: 1, textAlign: "left" }}
+                  >
+                    Preferiti
+                  </span>
+                  <button
+                    className="fab__control-btn"
+                    onClick={() => setPlaylistModalOpen(true)}
+                    aria-label="Aggiungi a playlist"
+                  >
+                    <ListPlus size={16} />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="fab__divider" />
+              <div className="fab__divider" />
 
-            {/* Sezione fontSize */}
-            <div className="fab__section">
-              <span className="fab__label">Testo</span>
-              <div className="fab__row">
-                <button
-                  className="fab__control-btn"
-                  onClick={decrease}
-                  disabled={fontSize <= 12}
-                  aria-label="Riduci testo"
-                >
-                  <ZoomOut size={16} />
-                </button>
-                <span className="fab__value">{fontSize}px</span>
-                <button
-                  className="fab__control-btn"
-                  onClick={increase}
-                  disabled={fontSize >= 26}
-                  aria-label="Ingrandisci testo"
-                >
-                  <ZoomIn size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="fab__divider" />
-
-            {/* Sezione nota basso */}
-            <div className="fab__section">
-              <span className="fab__label">Nota basso</span>
-              <div className="fab__row">
-                <button
-                  className={`fab__control-btn${hideBass ? " fab__control-btn--active" : ""}`}
-                  onClick={() => setHideBass((h) => !h)}
-                  aria-label={
-                    hideBass ? "Mostra nota basso" : "Nascondi nota basso"
-                  }
-                >
-                  {hideBass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-                <span className="fab__value">
-                  {hideBass ? "Nascosta" : "Visibile"}
-                </span>
-              </div>
-            </div>
-
-            <div className="fab__divider" />
-
-            {/* Sezione autoscroll */}
-            <div className="fab__section">
-              <span className="fab__label">Autoscroll</span>
-              <div className="fab__row">
-                <button
-                  className="fab__control-btn"
-                  onClick={decreaseSpeed}
-                  disabled={speed <= SCROLL_MIN}
-                  aria-label="Rallenta"
-                >
-                  <Minus size={16} />
-                </button>
-                <span className="fab__value">{speed}</span>
-                <button
-                  className="fab__control-btn"
-                  onClick={increaseSpeed}
-                  disabled={speed >= SCROLL_MAX}
-                  aria-label="Accelera"
-                >
-                  <Plus size={16} />
-                </button>
-                <button
-                  className={`fab__control-btn${isScrolling ? " fab__control-btn--active" : ""}`}
-                  onClick={toggleScroll}
-                  aria-label={
-                    isScrolling ? "Pausa autoscroll" : "Avvia autoscroll"
-                  }
-                >
-                  {isScrolling ? <Pause size={16} /> : <Play size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="fab__divider" />
-
-            {/* Sezione playlist */}
-            <div className="fab__section">
-              <span className="fab__label">Playlist</span>
-              <div className="fab__row">
-                <button
-                  className={`fab__control-btn${songIsFavorite ? " fab__control-btn--active" : ""}`}
-                  onClick={() => toggleFavorite(song.id)}
-                  aria-label={
-                    songIsFavorite
-                      ? "Rimuovi dai preferiti"
-                      : "Aggiungi ai preferiti"
-                  }
-                >
-                  <Heart
-                    size={16}
-                    fill={songIsFavorite ? "currentColor" : "none"}
-                  />
-                </button>
-                <span
-                  className="fab__value"
-                  style={{ flex: 1, textAlign: "left" }}
-                >
-                  Preferiti
-                </span>
-                <button
-                  className="fab__control-btn"
-                  onClick={() => setPlaylistModalOpen(true)}
-                  aria-label="Aggiungi a playlist"
-                >
-                  <ListPlus size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="fab__divider" />
-
-            {/* Sezione gestione */}
-            <div className="fab__section">
-              <span className="fab__label">Gestione</span>
-              <div className="fab__row">
-                <button
-                  className="fab__control-btn"
-                  onClick={() => navigate(`/song/${song.id}/edit`)}
-                  aria-label="Modifica canzone"
-                >
-                  <Pencil size={16} />
-                </button>
-                <span className="fab__value" style={{ flex: 1, textAlign: "left" }}>
-                  Modifica
-                </span>
-                <button
-                  className="fab__control-btn fab__control-btn--danger"
-                  onClick={() => setDeleteModalOpen(true)}
-                  disabled={isDeleting}
-                  aria-label="Elimina canzone"
-                >
-                  <Trash2 size={16} />
-                </button>
+              <div className="fab__section">
+                <span className="fab__label">Gestione</span>
+                <div className="fab__row">
+                  <button
+                    className="fab__control-btn"
+                    onClick={() => navigate(`/song/${song.id}/edit`)}
+                    aria-label="Modifica canzone"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <span
+                    className="fab__value"
+                    style={{ flex: 1, textAlign: "left" }}
+                  >
+                    Modifica
+                  </span>
+                  <button
+                    className="fab__control-btn"
+                    onClick={() => setDeleteModalOpen(true)}
+                    disabled={isDeleting}
+                    aria-label="Elimina canzone"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+        </>
+      )}
+
+      <nav className="song-dock" aria-label="Controlli canzone">
+        {showNav && (
+          <div className="dock-group">
+            <button
+              className="dock-btn"
+              onClick={goToPrev}
+              disabled={!prevSong}
+              aria-label="Canzone precedente"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              className="dock-btn"
+              onClick={goToNext}
+              disabled={!nextSong}
+              aria-label="Canzone successiva"
+            >
+              <ChevronRight size={22} />
+            </button>
+          </div>
         )}
 
-        <button
-          className={`fab${controlsOpen ? " fab--open" : ""}`}
-          onClick={() => setControlsOpen((o) => !o)}
-          aria-label={controlsOpen ? "Chiudi controlli" : "Apri controlli"}
-          aria-expanded={controlsOpen}
-        >
-          {controlsOpen ? <X size={22} /> : <SlidersHorizontal size={22} />}
-          {hasBadge && !controlsOpen && (
-            <span className="fab__badge" aria-hidden="true" />
-          )}
-        </button>
-      </div>
+        <div className="song-dock__scroll">
+          <div className="dock-group">
+            <button
+              className="dock-btn"
+              onClick={down}
+              aria-label="Semitono giù"
+            >
+              <Minus size={18} />
+            </button>
+            <span className="dock-value">
+              <Music2 size={14} aria-hidden="true" />
+              {keyLabel}
+            </span>
+            {semitones !== 0 && (
+              <button
+                className="dock-btn dock-btn--muted"
+                onClick={reset}
+                aria-label="Ripristina tonalità"
+              >
+                <RotateCcw size={15} />
+              </button>
+            )}
+            <button className="dock-btn" onClick={up} aria-label="Semitono su">
+              <Plus size={18} />
+            </button>
+          </div>
+
+          <div className="dock-group">
+            <button
+              className="dock-btn"
+              onClick={capoDown}
+              disabled={capo <= 0}
+              aria-label="Capotasto giù"
+            >
+              <Minus size={18} />
+            </button>
+            <span className="dock-value">
+              <span className="dock-value__tag">Capo</span>
+              {capo === 0 ? "—" : toRoman(capo)}
+            </span>
+            {capo !== 0 && (
+              <button
+                className="dock-btn dock-btn--muted"
+                onClick={resetCapo}
+                aria-label="Ripristina capotasto"
+              >
+                <RotateCcw size={15} />
+              </button>
+            )}
+            <button
+              className="dock-btn"
+              onClick={capoUp}
+              disabled={capo >= 12}
+              aria-label="Capotasto su"
+            >
+              <Plus size={18} />
+            </button>
+          </div>
+
+          <div className="dock-group">
+            <button
+              className="dock-btn"
+              onClick={decrease}
+              disabled={fontSize <= 12}
+              aria-label="Riduci testo"
+            >
+              <ZoomOut size={18} />
+            </button>
+            <span className="dock-value">{fontSize}</span>
+            <button
+              className="dock-btn"
+              onClick={increase}
+              disabled={fontSize >= 26}
+              aria-label="Ingrandisci testo"
+            >
+              <ZoomIn size={18} />
+            </button>
+          </div>
+
+          <div className="dock-group">
+            <button
+              className="dock-btn"
+              onClick={decreaseSpeed}
+              disabled={speed <= SCROLL_MIN}
+              aria-label="Rallenta"
+            >
+              <Minus size={18} />
+            </button>
+            <span className="dock-value">
+              <span className="dock-value__tag">Scroll</span>
+              {speed}
+            </span>
+            <button
+              className="dock-btn"
+              onClick={increaseSpeed}
+              disabled={speed >= SCROLL_MAX}
+              aria-label="Accelera"
+            >
+              <Plus size={18} />
+            </button>
+            <button
+              className={`dock-btn${isScrolling ? " dock-btn--active" : ""}`}
+              onClick={toggleScroll}
+              aria-label={isScrolling ? "Pausa autoscroll" : "Avvia autoscroll"}
+            >
+              {isScrolling ? <Pause size={18} /> : <Play size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="dock-group dock-group--static">
+          <button
+            className={`dock-btn${controlsOpen ? " dock-btn--active" : ""}`}
+            onClick={() => setControlsOpen((o) => !o)}
+            aria-label={controlsOpen ? "Chiudi altre opzioni" : "Altre opzioni"}
+            aria-expanded={controlsOpen}
+          >
+            {controlsOpen ? <X size={20} /> : <Ellipsis size={20} />}
+            {songIsFavorite && !controlsOpen && (
+              <span className="dock-badge" aria-hidden="true" />
+            )}
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }

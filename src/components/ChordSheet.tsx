@@ -164,7 +164,7 @@ export function ChordSheet({ content, notation = "international", hideBass = fal
     <>
       <div
         ref={containerRef}
-        className="chord-sheet"
+        className={`chord-sheet${notation === "italian" ? " chord-sheet--italian" : ""}`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {tooltip.isOpen && (
