@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "vitest run",
+    "import:fetch": "node scripts/import-canti.mjs fetch",
+    "import:convert": "node scripts/import-canti.mjs convert",
+    "import:upload": "node scripts/import-canti.mjs upload"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -35,6 +39,7 @@
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.56.0",
     "vite": "^6.0.5",
-    "vite-plugin-pwa": "^0.21.1"
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^5.0.3"
   }
 }
