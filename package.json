@@ -11,7 +11,8 @@
     "test": "vitest run",
     "import:fetch": "node scripts/import-canti.mjs fetch",
     "import:convert": "node scripts/import-canti.mjs convert",
-    "import:upload": "node scripts/import-canti.mjs upload"
+    "import:upload": "node scripts/import-canti.mjs upload",
+    "import:sync": "node scripts/import-canti.mjs sync"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

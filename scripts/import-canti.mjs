@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createClient } from '@supabase/supabase-js'
 import ChordSheetJS from 'chordsheetjs'
 import { convertCanto, bigCollections } from './lib/convertCanto.mjs'
+import { runSync, fetchCantiRows, convertAll } from './lib/syncCanti.mjs'
 
 const API_URL = 'https://www.canticristiani.it/api/canti.json'
 const DIR = new URL('./data/', import.meta.url)
@@ -13,6 +14,20 @@ const BATCH = 100
 
 const cmd = process.argv[2]
 const yes = process.argv.includes('--yes')
+
+// in CI le variabili arrivano dall'ambiente; in locale da .env
+function loadEnv() {
+  if (!process.env.VITE_SUPABASE_URL) process.loadEnvFile('.env')
+}
+
+function parseMaxNew() {
+  const i = process.argv.indexOf('--max-new')
+  const v = i > 0 ? process.argv[i + 1] : process.env.MAX_NEW
+  if (v === undefined || v === '') return undefined
+  const n = Number(v)
+  if (!Number.isInteger(n) || n < 0) throw new Error(`--max-new non valido: ${v}`)
+  return n
+}
 
 async function fetchPhase() {
   await mkdir(DIR, { recursive: true })
@@ -50,7 +65,7 @@ async function convertPhase() {
 }
 
 async function uploadPhase() {
-  process.loadEnvFile('.env')
+  loadEnv()
   const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
   const songs = JSON.parse(await readFile(PREVIEW, 'utf8'))
   const count = async () => {
@@ -74,6 +89,17 @@ async function uploadPhase() {
   console.log(`righe in DB dopo: ${await count()}`)
 }
 
-const phases = { fetch: fetchPhase, convert: convertPhase, upload: uploadPhase }
-if (!phases[cmd]) { console.error('uso: node scripts/import-canti.mjs fetch|convert|upload [--yes]'); process.exit(1) }
+async function syncPhase() {
+  loadEnv()
+  const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+  await runSync({
+    supabase, yes, maxNew: parseMaxNew(),
+    fetchRows: () => fetchCantiRows(API_URL),
+    convertAll,
+    check: (s) => { new ChordSheetJS.ChordProParser().parse(s.content).transpose(1) },
+  })
+}
+
+const phases = { fetch: fetchPhase, convert: convertPhase, upload: uploadPhase, sync: syncPhase }
+if (!phases[cmd]) { console.error('uso: node scripts/import-canti.mjs fetch|convert|upload|sync [--yes] [--max-new n]'); process.exit(1) }
 await phases[cmd]()
