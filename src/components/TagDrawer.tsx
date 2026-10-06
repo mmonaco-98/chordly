@@ -189,36 +189,9 @@ export function TagDrawer({
           </button>
         </div>
         <div className="tag-drawer__content">
-          {/* Canzonieri */}
-          <div>
-            <p className="tag-drawer__section-header">Raccolte</p>
-            <ul className="tag-drawer__list" role="list">
-              <li>
-                <button
-                  className={`tag-drawer__item${activeTag === null ? " tag-drawer__item--active" : ""}`}
-                  onClick={() => handleSelectTag(null)}
-                >
-                  <Music size={18} strokeWidth={2} />
-                  Tutti
-                </button>
-              </li>
-              {tags.map((tag) => (
-                <li key={tag}>
-                  <button
-                    className={`tag-drawer__item${activeTag === tag ? " tag-drawer__item--active" : ""}`}
-                    onClick={() => handleSelectTag(tag)}
-                  >
-                    {labelForTag(tag)}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
           {/* Playlist personali */}
           <div>
-            <p className="tag-drawer__section-header tag-drawer__section-header--spaced">
-              Playlist personali
-            </p>
+            <p className="tag-drawer__section-header">Playlist personali</p>
             <ul className="tag-drawer__list" role="list">
               {/* Preferiti (sempre visibile) */}
               <li>
@@ -311,6 +284,31 @@ export function TagDrawer({
                   </button>
                 )}
               </li>
+            </ul>
+          </div>
+          {/* Canzonieri */}
+          <div>
+            <p className="tag-drawer__section-header tag-drawer__section-header--spaced">Raccolte</p>
+            <ul className="tag-drawer__list" role="list">
+              <li>
+                <button
+                  className={`tag-drawer__item${activeTag === null ? " tag-drawer__item--active" : ""}`}
+                  onClick={() => handleSelectTag(null)}
+                >
+                  <Music size={18} strokeWidth={2} />
+                  Tutti
+                </button>
+              </li>
+              {tags.map((tag) => (
+                <li key={tag}>
+                  <button
+                    className={`tag-drawer__item${activeTag === tag ? " tag-drawer__item--active" : ""}`}
+                    onClick={() => handleSelectTag(tag)}
+                  >
+                    {labelForTag(tag)}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

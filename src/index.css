@@ -1070,7 +1070,9 @@ button {
   display: flex;
   flex: 1;
   flex-direction: column;
-  justify-content: space-between;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .tag-drawer--open .tag-drawer__panel {
@@ -1093,8 +1095,6 @@ button {
 
 .tag-drawer__list {
   list-style: none;
-  overflow-y: auto;
-  flex: 1;
   padding: 0.5rem 0;
 }
 
