@@ -2,19 +2,14 @@ import { useEffect, useSyncExternalStore, useState } from "react";
 import type { Song } from "../types";
 import {
   refreshSongs,
-  SONGS_KEY,
   createSong as createSongRepo,
   updateSong as updateSongRepo,
   deleteSong as deleteSongRepo,
 } from "../api/songsRepo";
-import { subscribe, getSnapshot } from "../api/cacheStore";
+import { subscribeSongs, getSongsSnapshot } from "../api/songsStore";
 
 export function useSongs(): Song[] {
-  const songs = useSyncExternalStore(
-    (listener) => subscribe(SONGS_KEY, listener),
-    () => getSnapshot<Song[]>(SONGS_KEY, []),
-    () => getSnapshot<Song[]>(SONGS_KEY, []),
-  );
+  const songs = useSyncExternalStore(subscribeSongs, getSongsSnapshot, getSongsSnapshot);
 
   useEffect(() => {
     // Network-first: tenta sempre BE al mount

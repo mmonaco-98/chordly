@@ -1,8 +1,9 @@
 import type { Song } from '../types'
 import { supabase } from './supabaseClient'
-import { getCache, setCache } from './cacheStore'
+import { fetchAllIds, fetchChanged } from './songsSync'
+import { mergeSongs } from './songsMerge'
+import { getSongsSnapshot, getLastUpdatedAt, setSongs } from './songsStore'
 
-export const SONGS_KEY = 'songs'
 export const LAST_REFRESH_KEY = 'songs:lastRefresh'
 
 export function markRefreshed() {
@@ -10,31 +11,16 @@ export function markRefreshed() {
 }
 
 export function getCachedSongs(): Song[] {
-  return getCache<Song[]>(SONGS_KEY) ?? []
+  return getSongsSnapshot()
 }
 
 export async function refreshSongs(): Promise<Song[]> {
-  const { data, error } = await supabase.from('songs').select('*')
-  if (error) throw error
-  
-  const songs = data.map(row => ({
-    id: row.id,
-    title: row.title,
-    artist: row.artist,
-    key: row.song_key,
-    bpm: row.bpm,
-    content: row.content,
-    tags: JSON.parse(row.tags as string) as string[],
-  }))
-  
-  // Normalize content
-  const normalized = songs.map((s) => ({
-    ...s,
-    content: Array.isArray(s.content) ? (s.content as string[]).join('\n') : s.content,
-  }))
-  
-  setCache(SONGS_KEY, normalized)
-  return normalized
+  const local = getSongsSnapshot()
+  const [ids, changed] = await Promise.all([fetchAllIds(), fetchChanged(getLastUpdatedAt())])
+  const merged = mergeSongs(local, changed.songs, ids)
+  const unchanged = changed.songs.length === 0 && merged.length === local.length
+  if (!unchanged) await setSongs(merged, changed.maxUpdatedAt)
+  return unchanged ? local : merged
 }
 
 export async function createSong(song: Song): Promise<Song> {
