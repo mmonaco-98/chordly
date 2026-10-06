@@ -66,3 +66,49 @@ export function convertAll(rows) {
   }
   return { songs, skipped }
 }
+
+export async function listCantiIds(supabase, page = 1000) {
+  const ids = []
+  for (let from = 0; ; from += page) {
+    const { data, error } = await supabase.from('songs').select('id')
+      .like('tags', '%"canticristiani"%').order('id').range(from, from + page - 1)
+    if (error) throw new Error(`lettura id: ${error.message}`)
+    ids.push(...data.map((r) => r.id))
+    if (data.length < page) return ids
+  }
+}
+
+export async function insertSongs(supabase, songs, now, batch = 100) {
+  for (let i = 0; i < songs.length; i += batch) {
+    const rows = songs.slice(i, i + batch).map((s, j) => ({
+      id: s.id, title: s.title, artist: s.artist, song_key: s.key, bpm: null,
+      content: s.content, tags: JSON.stringify(s.tags), updated_at: now + i + j,
+    }))
+    const { error } = await supabase.from('songs').upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
+    if (error) throw new Error(`batch ${i}: ${error.message}`)
+  }
+}
+
+export async function runSync({
+  supabase, fetchRows, convertAll, check, yes,
+  maxNew = DEFAULT_MAX_NEW, now = Date.now(), log = console.log,
+}) {
+  const rows = await fetchRows()
+  const { songs, skipped: unconvertible } = convertAll(rows)
+  const existing = await listCantiIds(supabase)
+  const fresh = pickNewSongs(songs, existing)
+  assertSane({ rawCount: rows.length, newCount: fresh.length, maxNew })
+  const { ok, skipped: unparsable } = splitParsable(fresh, check)
+  const skipped = [...unconvertible, ...unparsable]
+  log(`API: ${rows.length}; in DB: ${existing.length}; nuovi: ${fresh.length}; saltati: ${skipped.length}`)
+  for (const s of skipped) log(`  saltato ${s.id}: ${s.error}`)
+  let inserted = 0
+  if (!yes) {
+    log(`dry-run: ${ok.length} canti da inserire, nessuna scrittura. Rilanciare con --yes`)
+  } else if (ok.length > 0) {
+    await insertSongs(supabase, ok, now)
+    inserted = ok.length
+    for (const s of ok) log(`  + ${s.id}`)
+  }
+  return { apiCount: rows.length, existingCount: existing.length, newCount: fresh.length, inserted, skipped }
+}

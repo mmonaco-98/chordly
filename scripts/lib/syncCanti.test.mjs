@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   extractCantoId, pickNewSongs, assertSane, splitParsable, fetchCantiRows, convertAll,
+  listCantiIds, insertSongs, runSync,
   MIN_API_ROWS, DEFAULT_MAX_NEW,
 } from './syncCanti.mjs'
 
@@ -90,5 +91,100 @@ describe('convertAll', () => {
     ])
     expect(songs.map((s) => s.id)).toEqual(['ciao-mondo-4'])
     expect(skipped.map((s) => s.id)).toEqual(['6', '-7', 'ciao-mondo-4'])
+  })
+})
+
+function fakeSupabase(existing = []) {
+  const upserts = []
+  const likes = []
+  return {
+    upserts, likes,
+    from() {
+      const q = {
+        select() { return q },
+        like(col, pat) { likes.push([col, pat]); return q },
+        order() { return q },
+        range: async (a, b) => ({ data: existing.slice(a, b + 1).map((id) => ({ id })), error: null }),
+        upsert: async (rows, opts) => { upserts.push({ rows, opts }); return { error: null } },
+      }
+      return q
+    },
+  }
+}
+
+describe('listCantiIds', () => {
+  it('filtra per tag canticristiani', async () => {
+    const db = fakeSupabase(['a-1'])
+    await listCantiIds(db)
+    expect(db.likes).toEqual([['tags', '%"canticristiani"%']])
+  })
+  it('pagina oltre la dimensione di pagina', async () => {
+    const ids = ['a-1', 'b-2', 'c-3', 'd-4', 'e-5']
+    expect(await listCantiIds(fakeSupabase(ids), 2)).toEqual(ids)
+  })
+})
+
+describe('insertSongs', () => {
+  it('lotti, updated_at crescente, ignoreDuplicates, tags serializzati', async () => {
+    const db = fakeSupabase()
+    const songs = ['a-1', 'b-2', 'c-3'].map(song)
+    await insertSongs(db, songs, 1000, 2)
+    expect(db.upserts).toHaveLength(2)
+    expect(db.upserts[0].opts).toEqual({ onConflict: 'id', ignoreDuplicates: true })
+    const all = db.upserts.flatMap((u) => u.rows)
+    expect(all.map((r) => r.updated_at)).toEqual([1000, 1001, 1002])
+    expect(all[0]).toMatchObject({ id: 'a-1', song_key: '', bpm: null, tags: '["canticristiani"]' })
+  })
+})
+
+describe('runSync', () => {
+  const apiRows = Array.from({ length: MIN_API_ROWS }, (_, i) => ({ id_canti: String(i + 1) }))
+  const conv = (rows) => ({ songs: rows.map((r) => song(`t-${r.id_canti}`)), skipped: [] })
+  const base = (over = {}) => ({
+    fetchRows: async () => apiRows, convertAll: conv, check: () => {},
+    yes: true, now: 5000, log: () => {}, ...over,
+  })
+
+  it('inserisce solo i canti mancanti', async () => {
+    const existing = apiRows.slice(0, MIN_API_ROWS - 3).map((r) => `x-${r.id_canti}`)
+    const db = fakeSupabase(existing)
+    const res = await runSync({ supabase: db, ...base() })
+    expect(res).toMatchObject({ apiCount: MIN_API_ROWS, newCount: 3, inserted: 3 })
+    expect(db.upserts.flatMap((u) => u.rows).map((r) => r.id)).toEqual(['t-998', 't-999', 't-1000'])
+  })
+  it('idempotente: secondo giro non inserisce nulla', async () => {
+    const existing = apiRows.map((r) => `t-${r.id_canti}`)
+    const db = fakeSupabase(existing)
+    const res = await runSync({ supabase: db, ...base() })
+    expect(res.inserted).toBe(0)
+    expect(db.upserts).toEqual([])
+  })
+  it('dry-run: nessuna scrittura', async () => {
+    const db = fakeSupabase([])
+    const res = await runSync({ supabase: db, ...base({ yes: false, maxNew: 5000 }) })
+    expect(res).toMatchObject({ newCount: MIN_API_ROWS, inserted: 0 })
+    expect(db.upserts).toEqual([])
+  })
+  it('API troncata: lancia, nessuna scrittura', async () => {
+    const db = fakeSupabase([])
+    await expect(runSync({ supabase: db, ...base({ fetchRows: async () => apiRows.slice(0, 10) }) })).rejects.toThrow(/API/)
+    expect(db.upserts).toEqual([])
+  })
+  it('troppi nuovi: lancia, nessuna scrittura', async () => {
+    const db = fakeSupabase([])
+    await expect(runSync({ supabase: db, ...base() })).rejects.toThrow(/--max-new/)
+    expect(db.upserts).toEqual([])
+  })
+  it('canto non parsabile: saltato, gli altri inseriti', async () => {
+    const existing = apiRows.slice(0, MIN_API_ROWS - 2).map((r) => `x-${r.id_canti}`)
+    const db = fakeSupabase(existing)
+    const check = (s) => { if (s.id === 't-999') throw new Error('boom') }
+    const res = await runSync({ supabase: db, ...base({ check }) })
+    expect(res.inserted).toBe(1)
+    expect(res.skipped).toEqual([{ id: 't-999', error: 'boom' }])
+  })
+  it('errore Supabase in lettura: lancia', async () => {
+    const db = { from: () => { const q = { select: () => q, like: () => q, order: () => q, range: async () => ({ data: null, error: { message: 'rls' } }) }; return q } }
+    await expect(runSync({ supabase: db, ...base() })).rejects.toThrow(/rls/)
   })
 })
