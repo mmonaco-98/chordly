@@ -43,9 +43,9 @@ describe('convertCanto', () => {
     expect(song.content).toBe('[A]  |[C#m]  |')
   })
   it('riporta accordi sconosciuti e direttive scartate', () => {
-    const { song, report } = convertCanto(raw({ accordi: '{replay/m1}\n[7]a [(LA)]b {foo:x}' }))
-    expect(song.content).toBe('[7]a [(LA)]b')
-    expect(report.unknownChords).toEqual(['7', '(LA)'])
+    const { song, report } = convertCanto(raw({ accordi: '{replay/m1}\n[7]a [La2\\5]b {foo:x}' }))
+    expect(song.content).toBe('[*7]a [*La2\\5]b')
+    expect(report.unknownChords).toEqual(['7', 'La2\\5'])
     expect(report.droppedDirectives).toEqual(['replay', 'foo'])
   })
   it('fallback su testo se accordi vuoto; key vuota', () => {
@@ -59,6 +59,20 @@ describe('convertCanto', () => {
   })
   it('autore vuoto -> stringa vuota', () => {
     expect(convertCanto(raw({ autore: '' })).song.artist).toBe('')
+  })
+})
+
+describe('copy/paste e parentesi', () => {
+  it('paste riempie il ritornello con il blocco copiato', () => {
+    const { song } = convertCanto(raw({ accordi: '{start_chorus}{copy/rit}\n[DO]a\n{end_chorus}\n{start_verse}\nb\n{end_verse}\n{start_chorus}{paste/rit}\n{end_chorus}' }))
+    expect(song.content).toBe('{start_of_chorus}\n[C]a\n{end_of_chorus}\nb\n{start_of_chorus}\n[C]a\n{end_of_chorus}')
+  })
+  it('paste senza copy: scartato e riportato', () => {
+    const { report } = convertCanto(raw({ accordi: '{start_chorus}{paste/zzz}\n{end_chorus}' }))
+    expect(report.droppedDirectives).toContain('paste')
+  })
+  it('[ non chiusa diventa (', () => {
+    expect(convertCanto(raw({ accordi: 'a [Mi4me.\n[DO]b' })).song.content).toBe('a (Mi4me.\n[C]b')
   })
 })
 

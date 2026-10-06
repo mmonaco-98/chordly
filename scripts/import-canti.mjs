@@ -1,6 +1,7 @@
 // Uso: node scripts/import-canti.mjs fetch | convert | upload [--yes]
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createClient } from '@supabase/supabase-js'
+import ChordSheetJS from 'chordsheetjs'
 import { convertCanto, bigCollections } from './lib/convertCanto.mjs'
 
 const API_URL = 'https://www.canticristiani.it/api/canti.json'
@@ -30,18 +31,21 @@ async function convertPhase() {
   const dropped = {}
   const noChords = []
   const ids = new Set()
+  const unparsable = []
   for (const raw of rows) {
     const { song, report } = convertCanto(raw, { bigCollections: big })
     if (!song.title || ids.has(song.id)) throw new Error(`titolo vuoto o id duplicato: ${song.id}`)
     ids.add(song.id)
+    try { new ChordSheetJS.ChordProParser().parse(song.content).transpose(1) } catch (e) { unparsable.push(`${song.id}: ${e.message}`) }
     songs.push(song)
     for (const c of report.unknownChords) unknown[c] = (unknown[c] ?? 0) + 1
     for (const d of report.droppedDirectives) dropped[d] = (dropped[d] ?? 0) + 1
     if (report.noChords) noChords.push(song.id)
   }
   await writeFile(PREVIEW, JSON.stringify(songs, null, 2))
-  await writeFile(REPORT, JSON.stringify({ total: songs.length, noChords, dropped, unknown }, null, 2))
+  await writeFile(REPORT, JSON.stringify({ total: songs.length, noChords, unparsable, dropped, unknown }, null, 2))
   console.log(`convertiti ${songs.length}; senza accordi ${noChords.length}; accordi sconosciuti ${Object.keys(unknown).length} tipi`)
+  console.log(`non parsabili/trasponibili: ${unparsable.length}`, unparsable.slice(0, 10))
   console.log('direttive scartate:', dropped)
 }
 
@@ -57,11 +61,11 @@ async function uploadPhase() {
   const before = await count()
   console.log(`righe in DB prima: ${before}; da importare: ${songs.length}`)
   if (!yes) { console.log('dry-run: nessuna scrittura. Rilanciare con --yes'); return }
-  const now = Date.now()
+  const now = Date.now() // updated_at strettamente crescente per riga: il cursore del sync client (gt) non salta righe
   for (let i = 0; i < songs.length; i += BATCH) {
-    const rows = songs.slice(i, i + BATCH).map((s) => ({
+    const rows = songs.slice(i, i + BATCH).map((s, j) => ({
       id: s.id, title: s.title, artist: s.artist, song_key: s.key, bpm: null,
-      content: s.content, tags: JSON.stringify(s.tags), updated_at: now,
+      content: s.content, tags: JSON.stringify(s.tags), updated_at: now + i + j,
     }))
     const { error } = await supabase.from('songs').upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
     if (error) throw new Error(`batch ${i}: ${error.message}`)

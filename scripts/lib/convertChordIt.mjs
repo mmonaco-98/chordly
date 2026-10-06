@@ -18,9 +18,10 @@ function convertQuality(rest) {
   let minor = false
   if (q.startsWith('-')) { minor = true; q = q.slice(1) }
   else if (q.startsWith('m') && !q.startsWith('maj')) { minor = true; q = q.slice(1) }
+  if (q === '7-') { minor = true; q = '7' }
   q = q.replace(/^4\/7$|^7\/4$/, '7sus4')
   q = q.replace(/^\+7/, 'maj7').replace(/^7\+/, 'maj7')
-  q = q.replace(/^5\+$/, 'aug')
+  q = q.replace(/^5\+$|^\+$/, 'aug')
   q = q.replace(/^4$/, 'sus4')
   q = (minor ? 'm' : '') + q
   return QUALITY_OK.test(q) ? q : null
@@ -28,6 +29,11 @@ function convertQuality(rest) {
 
 export function convertChordIt(token) {
   const fail = { chord: token, ok: false }
+  const paren = token.match(/^\((.+)\)$/)
+  if (paren) {
+    const inner = convertChordIt(paren[1])
+    return inner.ok ? inner : fail
+  }
   // il basso si separa solo se '/' è seguito da una nota italiana ('4/7', '6/9' fanno parte della qualità)
   const bassMatch = token.match(/\/((?:sol|do|re|mi|fa|la|si)[#b♭♯]?.*)$/i)
   let main = token

@@ -15,4 +15,5 @@ server/dist/
 docs
 !docs/superpowers/
 !docs/suppressions/
-.worktrees/scripts/data/
+.worktrees/
+scripts/data/

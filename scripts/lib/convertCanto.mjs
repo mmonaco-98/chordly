@@ -32,10 +32,15 @@ export function convertCanto(raw, opts = {}) {
   report.noChords = !hasChords
 
   let firstChord = ''
-  const lines = source.replace(/\r\n?/g, '\n').replace(/ /g, ' ').split('\n')
+  const copies = {}
+  let recording = null
+  let buf = []
+  const lines = source.replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ').split('\n')
   const out = []
   for (const line of lines) {
     let hadDirective = false
+    let copyName = null
+    let pasteName = null
     let l = line.replace(/\{([^}]*)\}/g, (_m, body) => {
       hadDirective = true
       const sep = body.search(/[:/]/)
@@ -44,18 +49,30 @@ export function convertCanto(raw, opts = {}) {
       if (RENAME[name]) return `{${RENAME[name]}}`
       if (SILENT.has(name)) return ''
       if (name === 'c' || name === 'comment') return arg ? `{comment: ${arg}}` : ''
+      if (name === 'copy') { copyName = arg; return '' }
+      if (name === 'paste') { pasteName = arg; return '' }
       report.droppedDirectives.push(name)
       return ''
     })
-    l = l.replace(/\[([^\]]*)\]/g, (_m, token) => {
-      const { chord, ok } = convertChordIt(token.trim())
-      if (!ok) { report.unknownChords.push(token); return `[${token}]` }
+    l = l.replace(/\[([^\[\]]*)\]/g, (_m, token) => {
+      const t = token.trim()
+      const { chord, ok } = convertChordIt(t)
+      if (!ok) { report.unknownChords.push(t); return `[*${t}]` }
       if (!firstChord) firstChord = chord
       return `[${chord}]`
     })
-    l = l.replace(/\s+$/, '')
+    l = l.replace(/\[(?![^\]]*\])/g, '(').replace(/\s+$/, '')
     if (hadDirective && l.trim() === '' && line.trim() !== '') continue
     out.push(l)
+    if (pasteName !== null) {
+      if (copies[pasteName]) out.push(...copies[pasteName])
+      else report.droppedDirectives.push('paste')
+    }
+    if (copyName !== null) { recording = copyName; buf = [] }
+    else if (recording !== null) {
+      if (l === '{end_of_chorus}') { copies[recording] = buf; recording = null }
+      else buf.push(l)
+    }
   }
 
   const content = out.join('\n').replace(/\n{3,}/g, '\n\n').trim()

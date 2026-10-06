@@ -36,13 +36,19 @@ describe('convertChordIt', () => {
     expect(c('Soladd9')).toBe('Gadd9')
     expect(c('MI-7+')).toBe('Emmaj7')
   })
+  it('+ finale = aug, 7- = m7, parentesi rimosse', () => {
+    expect(c('RE+')).toBe('Daug')
+    expect(c('DO#7-')).toBe('C#m7')
+    expect(c('(LA)')).toBe('A')
+    expect(c('(SOL-)')).toBe('Gm')
+  })
   it('basso', () => {
     expect(c('RE/FA#')).toBe('D/F#')
     expect(c('Sol7+/Si')).toBe('Gmaj7/B')
     expect(c('RE/FA#-')).toBe('D/F#m')
   })
   it('non riconosciuti: invariati e ok=false', () => {
-    for (const t of ['7', '4', '/7', '(LA)', 'SOL LA  RE', 'La2\\5', 'La6/9', '']) {
+    for (const t of ['7', '4', '/7', 'DO4-3', 'SOL LA  RE', 'La2\\5', 'La6/9', '']) {
       const r = convertChordIt(t)
       expect(r.chord).toBe(t)
       expect(r.ok).toBe(false)
