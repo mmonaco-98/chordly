@@ -114,6 +114,12 @@ The `tags` field is optional but recommended. A song can have multiple tags: `["
 
 The `content` field uses **ChordPro** format: chords in `[ ]` inline before the word.
 
+### Automatic sync from canticristiani.it
+
+`npm run import:sync [-- --yes] [-- --max-new n]` downloads `https://www.canticristiani.it/api/canti.json`, converts every song and inserts only those whose `id_canti` (the numeric suffix of the id) is not already in Supabase among the rows tagged `canticristiani`. Existing songs are never updated. Without `--yes` it is a dry run. It refuses to write if the API returns fewer than 1000 songs or more than 50 are new (override with `--max-new` or the `MAX_NEW` env var).
+
+The workflow `.github/workflows/sync-canti.yml` runs it every day at 06:00 UTC and can be started manually from the Actions tab (optional `max_new` input). Required repository secrets: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Scheduled workflows only run from the default branch, and GitHub disables them after 60 days without repository activity (public repos); re-enable them from the Actions tab or with a commit.
+
 ## Playlists
 
 - A special **Favorites** playlist (`__fav__`) is created lazily on first use.
