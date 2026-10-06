@@ -26,7 +26,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/*.png", "icons/*.svg"],
+      includeAssets: ["icons/*.png"],
       manifest: {
         name: "Chordly",
         short_name: "Chordly",
