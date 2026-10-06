@@ -1,16 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useDeferredValue, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu, Settings2, X, Plus } from "lucide-react";
 import { SongCard } from "./SongCard";
 import { TagDrawer, labelForTag } from "./TagDrawer";
 import { usePlaylists } from "../hooks/usePlaylists";
 import { useSongs } from "../hooks/useSongs";
-import type { Song } from "../types";
-
-interface LetterGroup {
-  letter: string;
-  items: Song[];
-}
+import { filterAndGroup } from "../utils/listGroups";
 
 export function SongList() {
   const songs = useSongs();
@@ -28,28 +23,16 @@ export function SongList() {
 
   const { playlists, createPlaylist, deletePlaylist, reorderPlaylists } = usePlaylists();
 
-  const allTags = [...new Set(songs.flatMap((s) => s.tags ?? []))].sort();
-
-  const filtered = songs
-    .filter((s) => {
-      if (activeTag && !s.tags?.includes(activeTag)) return false;
-      const q = query.toLowerCase();
-      return (
-        s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
-      );
-    })
-    .sort((a, b) => a.title.localeCompare(b.title, "it"));
-
-  const groups: LetterGroup[] = [];
-  for (const song of filtered) {
-    const letter = song.title[0].toUpperCase();
-    const last = groups[groups.length - 1];
-    if (last && last.letter === letter) {
-      last.items.push(song);
-    } else {
-      groups.push({ letter, items: [song] });
-    }
-  }
+  const deferredQuery = useDeferredValue(query);
+  const allTags = useMemo(
+    () => [...new Set(songs.flatMap((s) => s.tags ?? []))].sort(),
+    [songs],
+  );
+  const { filtered, groups } = useMemo(
+    () => filterAndGroup(songs, deferredQuery, activeTag),
+    [songs, deferredQuery, activeTag],
+  );
+  const navState = useMemo(() => ({ source: "list", tag: activeTag }), [activeTag]);
 
   const showSidebar = !query && groups.length > 1;
 
@@ -228,10 +211,7 @@ export function SongList() {
               <ul role="list" className="song-list__letter-group">
                 {items.map((song) => (
                   <li key={song.id}>
-                    <SongCard
-                      song={song}
-                      navState={{ source: "list", tag: activeTag }}
-                    />
+                    <SongCard song={song} navState={navState} />
                   </li>
                 ))}
               </ul>

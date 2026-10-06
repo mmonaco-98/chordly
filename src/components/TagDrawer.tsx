@@ -106,6 +106,7 @@ const TAG_LABELS: Record<string, string> = {
   italiana: "Musica italiana",
   straniera: "Musica straniera",
   cristiana: "Musica cristiana",
+  canticristiani: "Canti cristiani",
   pop: "Pop",
   rock: "Rock",
   folk: "Folk",

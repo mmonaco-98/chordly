@@ -185,6 +185,11 @@ button {
   margin-bottom: 0.75rem;
 }
 
+.song-list__letter-group > li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
+}
+
 @media (min-width: 768px) {
   .song-list__letter-group {
     display: grid;

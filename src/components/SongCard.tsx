@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import type { Song } from "../types";
@@ -7,7 +8,7 @@ interface Props {
   navState?: unknown;
 }
 
-export function SongCard({ song, navState }: Props) {
+export const SongCard = memo(function SongCard({ song, navState }: Props) {
   const navigate = useNavigate();
 
   return (
@@ -19,4 +20,4 @@ export function SongCard({ song, navState }: Props) {
       <ChevronRight size={16} className="song-card__chevron" />
     </button>
   );
-}
+});
