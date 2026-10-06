@@ -3,6 +3,9 @@ import { supabase } from './supabaseClient'
 import { rowToSong, type SongRow } from './songsMerge'
 
 const PAGE = 1000
+// Finestra di sovrapposizione: tollera orologi client sfasati e scritture nello stesso ms.
+const OVERLAP_MS = 60_000
+const IN_CHUNK = 50
 
 // PostgREST taglia a 1000 righe per richiesta: paginare sempre.
 export async function fetchAllIds(): Promise<Set<string>> {
@@ -20,7 +23,7 @@ export async function fetchChanged(sinceUpdatedAt: number): Promise<{ songs: Son
   let max = sinceUpdatedAt
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
-      .from('songs').select('*').gt('updated_at', sinceUpdatedAt)
+      .from('songs').select('*').gt('updated_at', Math.max(0, sinceUpdatedAt - OVERLAP_MS))
       .order('updated_at').order('id').range(from, from + PAGE - 1)
     if (error) throw error
     for (const row of data as SongRow[]) {
@@ -29,4 +32,15 @@ export async function fetchChanged(sinceUpdatedAt: number): Promise<{ songs: Son
     }
     if (data.length < PAGE) return { songs, maxUpdatedAt: max }
   }
+}
+
+/** Scarica le canzoni con questi id (recupero di righe sfuggite al cursore). */
+export async function fetchByIds(ids: string[]): Promise<Song[]> {
+  const songs: Song[] = []
+  for (let i = 0; i < ids.length; i += IN_CHUNK) {
+    const { data, error } = await supabase.from('songs').select('*').in('id', ids.slice(i, i + IN_CHUNK))
+    if (error) throw error
+    for (const row of data as SongRow[]) songs.push(rowToSong(row))
+  }
+  return songs
 }

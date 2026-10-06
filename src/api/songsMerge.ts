@@ -28,3 +28,8 @@ export function mergeSongs(local: Song[], changed: Song[], remoteIds: Set<string
   for (const s of changed) byId.set(s.id, s)
   return [...byId.values()]
 }
+
+export function missingIds(local: Song[], changed: Song[], remoteIds: Set<string>): string[] {
+  const have = new Set([...local.map((s) => s.id), ...changed.map((s) => s.id)])
+  return [...remoteIds].filter((id) => !have.has(id))
+}

@@ -25,3 +25,15 @@ describe('rowToSong', () => {
     expect(rowToSong({ id: 'x', title: 'T', artist: '', song_key: '', bpm: null, content: ['a', 'b'], tags: '[]' }).content).toBe('a\nb')
   })
 })
+
+import { missingIds } from './songsMerge'
+
+describe('missingIds', () => {
+  it('id remoti non presenti né in locale né tra i cambiati', () => {
+    const r = missingIds([s('a')], [s('b')], new Set(['a', 'b', 'c', 'd']))
+    expect(r.sort()).toEqual(['c', 'd'])
+  })
+  it('nessuno mancante', () => {
+    expect(missingIds([s('a')], [], new Set(['a']))).toEqual([])
+  })
+})

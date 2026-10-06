@@ -4,6 +4,7 @@ import { useTheme } from '../hooks/useTheme'
 import { useFontSize } from '../hooks/useFontSize'
 import { useChordNotation } from '../hooks/useChordNotation'
 import { clearCache } from '../api/cacheStore'
+import { clearSongsStore } from '../api/songsStore'
 
 export function Settings() {
   const navigate = useNavigate()
@@ -11,9 +12,10 @@ export function Settings() {
   const { fontSize, increase, decrease } = useFontSize()
   const { notation, toggle: toggleNotation } = useChordNotation()
 
-  const handleClearCache = () => {
+  const handleClearCache = async () => {
     if (!confirm('Cancellare la cache locale?')) return
     clearCache()
+    await clearSongsStore()
     location.reload()
   }
 
