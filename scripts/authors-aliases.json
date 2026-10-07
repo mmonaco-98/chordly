@@ -2,7 +2,152 @@
   "overrides": {
     "Avolio-Capacchione-La Rocca": ["Avolio", "Capacchione", "La Rocca"],
     "Jean-Paul Lécot": ["Jean-Paul Lécot"],
-    "Gen rosso-verde": ["Gen Rosso", "Gen Verde"]
+    "Gen rosso-verde": ["Gen Rosso", "Gen Verde"],
+    "A. Vitalini-Lavagna": ["A. Vitalini", "Lavagna"],
+    "Benedetti-Anselmi": ["Benedetti", "Anselmi"],
+    "D. Scarpa-F. Buttazzo": ["D. Scarpa", "F. Buttazzo"],
+    "De Lazzaro-Manzari": ["De Lazzaro", "Manzari"],
+    "F.Marranzino-F.G.Pesare": ["F. Marranzino", "F. G. Pesare"],
+    "M. Emberti Gialloreti-A.M. Galliano": [
+      "M. Emberti Gialloreti",
+      "A.M. Galliano"
+    ],
+    "Negrini-Frigerio": ["Negrini", "Frigerio"],
+    "Padre D.Betancourt-D.Deo": ["Padre D. Betancourt", "D. Deo"],
+    "RnS - M. Emberti Gialloreti-C. Rossi": [
+      "RnS",
+      "M. Emberti Gialloreti",
+      "C. Rossi"
+    ],
+    "Roncari-Capello-Rossi": ["Roncari", "Capello", "Rossi"],
+    "Venanzio Fortunato-Urbano VIII": ["Venanzio Fortunato", "Urbano VIII"],
+    "A. Marani - Comunione E Liberazione": [
+      "A. Marani",
+      "Comunione E Liberazione"
+    ],
+    "A.Benedetti e G.Anselmi": ["A. Benedetti", "G. Anselmi"],
+    "Cantàmmo a Gesù e Dylan Official": ["Cantàmmo a Gesù", "Dylan Official"],
+    "Christopher Walker & Marco Deflorian, Marco Deflorian": [
+      "Christopher Walker",
+      "Marco Deflorian",
+      "Marco Deflorian"
+    ],
+    "Comunione e Liberazione": ["Comunione E Liberazione"],
+    "D. Haas & Marco Deflorian, Marco Deflorian": [
+      "D. Haas",
+      "Marco Deflorian",
+      "Marco Deflorian"
+    ],
+    "Davide Toffoletto e Barbara Zilli": ["Davide Toffoletto", "Barbara Zilli"],
+    "Elena Storchi, Renato Giorgi e Valerio Antonioli": [
+      "Elena Storchi",
+      "Renato Giorgi",
+      "Valerio Antonioli"
+    ],
+    "Giulia e Tommaso Fasano": ["Giulia Fasano", "Tommaso Fasano"],
+    "Jappo & Manu": ["Jappo", "Manu"],
+    "Lidia Genta, Sara Taccardi, Davide Tatriele & Giorgio Ammirabile": [
+      "Lidia Genta",
+      "Sara Taccardi",
+      "Davide Tatriele",
+      "Giorgio Ammirabile"
+    ],
+    "Maria Napolitano (Testo) e Tania Pierannunzi (musica e arrangiamento)": [
+      "Maria Napolitano",
+      "Tania Pierannunzi"
+    ],
+    "Renata Tosi & David Brian": ["Renata Tosi", "David Brian"],
+    "RnS - B. Conte e G. Ferrante": ["RnS", "B. Conte", "G. Ferrante"],
+    "Roberta Torresi e Paolo Bisonni": ["Roberta Torresi", "Paolo Bisonni"],
+    "M. Emberti Gialloreti- A.M. Galliano": [
+      "M. Emberti Gialloreti",
+      "A.M. Galliano"
+    ],
+    "RnS (G. Sanfratello - G. Cucuzza)": [
+      "RnS",
+      "G. Sanfratello",
+      "Giuseppe Cucuzza"
+    ],
+    "RnS (F.G.Pesare - De Luca)": ["RnS", "F. G. Pesare", "De Luca"],
+    "M. Castellacci R. Biagioli": ["M. Castellacci", "Renato Biagioli"],
+    "A. M. Galliano D. Anselmi": ["Anna Maria Galliano", "D. Anselmi"],
+    "Benedetti Anselmi": ["Benedetti", "Anselmi"],
+    "Antonella ed Elisella Martinelli": [
+      "Antonella Martinelli",
+      "Elisella Martinelli"
+    ],
+    "Paolo Lo Martire RNS": ["Paolo Lo Martire", "RnS"],
+    "RnS Margaret Evans": ["RnS", "Margaret Evans"],
+    "Mario Clemente (Comunità Gesù risorto)": [
+      "Mario Clemente",
+      "Comunità Gesù Risorto"
+    ],
+    "Gino Stefani Da Canto Gregoriano": ["Gino Stefani", "Gregoriano"],
+    "Matteo Calisi Da Tradizionale Ebraico": [
+      "Matteo Calisi",
+      "Tradizionale Ebraico"
+    ],
+    "Musica: P. Damilano": ["P. Damilano"],
+    "musica Comunità Shalom": ["Comunità Shalom"],
+    "Rivisitazione Compagnia Aquero": ["Compagnia Aquero"]
   },
-  "names": {}
+  "names": {
+    "A. Di Mario": "Angelo Di Mario",
+    "A. Lagorio": "Angelo Lagorio",
+    "A. Roncari": "Angelo Roncari",
+    "A.M. Galliano": "Anna Maria Galliano",
+    "A. De Luca": "Alessandra De Luca",
+    "P. Eugenio Costa": "Eugenio Costa",
+    "C. Walker": "Christopher Walker",
+    "D. Machetta": "Domenico Machetta",
+    "D. Ricci": "Daniele Ricci",
+    "D. Scarpa": "Daniele Scarpa",
+    "D. Semprini": "Daniele Semprini",
+    "D. Preti": "Duilio Preti",
+    "F. Baggio": "Fabio Baggio",
+    "F. Massimillo": "Fabio Massimillo",
+    "G. Amadei": "Guglielmo Amadei",
+    "G. Cento": "Giosy Cento",
+    "G. Meregalli": "Guido Meregalli",
+    "G. Becchimanzi": "Gennaro Becchimanzi",
+    "Fr. Gennaro Becchimanzi": "Gennaro Becchimanzi",
+    "P. Gennaro Becchimanzi": "Gennaro Becchimanzi",
+    "I. Valoppi": "Ivo Valoppi",
+    "K. Arguello": "Kiko Arguello",
+    "L. Capello": "Lorenzo Capello",
+    "L. Mariano": "Luigi Mariano",
+    "L. Picchi": "Luigi Picchi",
+    "M. Balduzzi": "Mite Balduzzi",
+    "M. Deflorian": "Marco Deflorian",
+    "M. Emberti Gialloreti": "Marco Emberti Gialloreti",
+    "M.E. Gialloreti": "Marco Emberti Gialloreti",
+    "M. Giombini": "Marcello Giombini",
+    "M. Zambuto": "Matteo Zambuto",
+    "P. Auricchio": "Paolo Auricchio",
+    "P. Ciardella": "Piero Ciardella",
+    "P. Paci": "Paolo Paci",
+    "P. Sequeri": "Pierangelo Sequeri",
+    "P. Tombolato": "Pino Tombolato",
+    "P. Ruaro": "Pierangelo Ruaro",
+    "R. Farruggio": "Rino Farruggio",
+    "R. Giorgi": "Renato Giorgi",
+    "R. Grotti": "Roberto Grotti",
+    "S. Puri": "Stefano Puri",
+    "S. Varnavà": "Stefano Varnavà",
+    "V. Antonioli": "Valerio Antonioli",
+    "V. Meloni": "Valentino Meloni",
+    "V. Nadalin": "Vittorio Nadalin",
+    "P. Dargenio": "Pasquale Dargenio",
+    "F. Buttazzo": "Francesco Buttazzo",
+    "S.Martinez": "Salvatore Martinez",
+    "Figli del Divin Amore": "Figli del Divino Amore",
+    "San Francesco d'Assisi": "S. Francesco D'Assisi",
+    "Sant'Alfonso Maria de' Liguori": "S. Alfonso M. De Liguori",
+    "David Maria Turoldo": "Davide Maria Turoldo",
+    "Autori Vari": "Autori Religiosi Vari",
+    "Oratorio di Arese": "Oratorio Salesiano di Arese",
+    "Popolare America Latina": "Canto popolare dell’America Latina.",
+    "Canto popolare america latina": "Canto popolare dell’America Latina.",
+    "Lecot": "Jean-Paul Lécot"
+  }
 }

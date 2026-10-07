@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useDeferredValue, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Menu, Settings, Settings2, Plus, ChevronDown, RotateCcw } from "lucide-react";
+import { Menu, Settings, Settings2, Plus, RotateCcw } from "lucide-react";
 import { SongCard } from "./SongCard";
+import { FilterCombobox } from "./FilterCombobox";
 import { TagDrawer, labelForTag } from "./TagDrawer";
 import { usePlaylists } from "../hooks/usePlaylists";
+import { useTapToBlur } from "../hooks/useTapToBlur";
 import { useSongs } from "../hooks/useSongs";
 import {
   filterAndGroup,
@@ -32,6 +34,7 @@ export function SongList() {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+  const searchTapToBlur = useTapToBlur();
 
   const { playlists, createPlaylist, deletePlaylist, reorderPlaylists } = usePlaylists();
 
@@ -47,7 +50,14 @@ export function SongList() {
   const hasFilters = !!(author || activeTag);
   const activeFilterCount = (author ? 1 : 0) + (activeTag ? 1 : 0);
   const [filtersOpen, setFiltersOpen] = useState(hasFilters);
-  const authors = useMemo(() => uniqueAuthors(songs), [songs]);
+  const authorOptions = useMemo(
+    () => uniqueAuthors(songs).map((a) => ({ value: a, label: a })),
+    [songs],
+  );
+  const tagOptions = useMemo(
+    () => allTags.map((t) => ({ value: t, label: labelForTag(t) })),
+    [allTags],
+  );
   const navState = useMemo(
     () => ({ source: "list" as const, ...filters }),
     [filters],
@@ -197,6 +207,7 @@ export function SongList() {
             value={query}
             onChange={(e) => updateFilters({ query: e.target.value })}
             aria-label="Cerca canzone"
+            {...searchTapToBlur}
           />
           <button
             className={`icon-btn song-list__filters-toggle${filtersOpen ? " song-list__filters-toggle--open" : ""}`}
@@ -217,34 +228,20 @@ export function SongList() {
         >
           <div className="song-list__filters-clip">
         <div className="song-list__filters">
-          <label className="filter-select">
-            <span className="visually-hidden">Autore</span>
-            <select
-              className={author ? "filter-select__input filter-select__input--active" : "filter-select__input"}
-              value={author ?? ""}
-              onChange={(e) => updateFilters({ author: e.target.value || null })}
-            >
-              <option value="">Tutti gli autori</option>
-              {authors.map((a) => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="filter-select__chevron" aria-hidden="true" />
-          </label>
-          <label className="filter-select">
-            <span className="visually-hidden">Raccolta</span>
-            <select
-              className={activeTag ? "filter-select__input filter-select__input--active" : "filter-select__input"}
-              value={activeTag ?? ""}
-              onChange={(e) => updateFilters({ tag: e.target.value || null })}
-            >
-              <option value="">Tutte le raccolte</option>
-              {allTags.map((tg) => (
-                <option key={tg} value={tg}>{labelForTag(tg)}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="filter-select__chevron" aria-hidden="true" />
-          </label>
+          <FilterCombobox
+            label="Autore"
+            allLabel="Tutti gli autori"
+            options={authorOptions}
+            value={author}
+            onChange={(v) => updateFilters({ author: v })}
+          />
+          <FilterCombobox
+            label="Raccolta"
+            allLabel="Tutte le raccolte"
+            options={tagOptions}
+            value={activeTag}
+            onChange={(v) => updateFilters({ tag: v })}
+          />
           <button
             className="icon-btn song-list__reset"
             onClick={() => updateFilters({ author: null, tag: null })}

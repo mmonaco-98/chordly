@@ -632,7 +632,6 @@ button {
   transition: background 0.15s;
 }
 .chord-sheet--italian .chord {
-  text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 .chord-sheet .chord:not(:empty):active {
@@ -1067,6 +1066,12 @@ button {
   min-height: 0;
 }
 
+/* a pannello aperto i dropdown dei combobox devono poter uscire dal clip */
+.song-list__filters-collapse--open .song-list__filters-clip {
+  overflow: visible;
+  transition: overflow 0s 0.28s allow-discrete;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .song-list__filters-collapse {
     transition: none;
@@ -1123,6 +1128,70 @@ button {
 
 .filter-select__input--active + .filter-select__chevron {
   color: var(--accent-light);
+}
+
+.filter-combo__input {
+  font-size: 1rem; /* >=16px: niente zoom automatico su iOS */
+  color: var(--text);
+}
+
+.filter-combo__input::placeholder {
+  color: var(--text-muted);
+}
+
+.filter-combo__clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--accent-light);
+  cursor: pointer;
+}
+
+.filter-combo__list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  max-height: min(50vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--surface);
+  border: 1.5px solid var(--surface-2);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.filter-combo__option,
+.filter-combo__empty {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.filter-combo__empty {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.filter-combo__option--highlight {
+  background: var(--surface-2);
+}
+
+.filter-combo__option--selected {
+  color: var(--accent-light);
+  font-weight: 600;
 }
 
 .visually-hidden {

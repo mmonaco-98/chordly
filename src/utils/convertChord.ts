@@ -1,13 +1,13 @@
 export type ChordNotation = 'international' | 'italian'
 
 const INT_TO_IT: Record<string, string> = {
-  C: 'Do',
-  D: 'Re',
-  E: 'Mi',
-  F: 'Fa',
-  G: 'Sol',
-  A: 'La',
-  B: 'Si',
+  C: 'DO',
+  D: 'RE',
+  E: 'MI',
+  F: 'FA',
+  G: 'SOL',
+  A: 'LA',
+  B: 'SI',
 }
 
 function convertNote(note: string): string {
