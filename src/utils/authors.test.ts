@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   EMPTY_ALIASES, compareKey, splitAuthors, makeCanon, applyCanon, joinAuthors,
-  resolveAuthors, parseAuthorsInput, parseAuthorsColumn, hyphenAmbiguities,
+  resolveAuthors, parseAuthorsInput, parseAuthorsColumn, hyphenAmbiguities, splitWarnings, normalizeList,
   type Aliases,
 } from './authors.mjs'
 
@@ -57,6 +57,39 @@ describe('splitAuthors', () => {
   it('applica gli alias per nome (chiave di confronto)', () => {
     expect(splitAuthors('M. Giombini - Gen Verde', aliases)).toEqual(['Marcello Giombini', 'Gen Verde'])
     expect(splitAuthors('m.giombini', aliases)).toEqual(['Marcello Giombini'])
+  })
+})
+
+describe('splitAuthors: parentesi', () => {
+  it('non spezza dentro le parentesi', () => {
+    expect(splitAuthors('RnS (G. Sanfratello - G. Cucuzza)')).toEqual(['RnS (G. Sanfratello - G. Cucuzza)'])
+    expect(splitAuthors('Maria Napolitano (Testo) e Tania Pierannunzi (musica e arrangiamento)'))
+      .toEqual(['Maria Napolitano (Testo)', 'Tania Pierannunzi (musica e arrangiamento)'])
+  })
+})
+
+describe('normalizeList', () => {
+  it('applica alias e deduplica senza rispezzare', () => {
+    expect(normalizeList(['Simon e Garfunkel', 'M. Giombini', 'simon e garfunkel'], aliases))
+      .toEqual(['Simon e Garfunkel', 'Marcello Giombini'])
+  })
+})
+
+describe('splitWarnings', () => {
+  it('segnala i casi dubbi con il motivo', () => {
+    expect(splitWarnings('Comunione e Liberazione')).toEqual(['e'])
+    expect(splitWarnings('Comunione E Liberazione')).toEqual(['e'])
+    expect(splitWarnings('Walker & Deflorian')).toEqual(['&'])
+    expect(splitWarnings('RnS (G. Sanfratello')).toEqual(['parentesi'])
+    expect(splitWarnings('M. Emberti- A.M. Galliano')).toEqual(['trattino con spazio da un solo lato'])
+    expect(splitWarnings('RnS -De Luca')).toEqual(['trattino con spazio da un solo lato'])
+  })
+  it('niente per i casi chiari, gli override e i segnaposto', () => {
+    expect(splitWarnings('Rossi, Bianchi')).toEqual([])
+    expect(splitWarnings('RnS - De Luca')).toEqual([])
+    expect(splitWarnings('Comunione e Liberazione', { overrides: { 'Comunione e Liberazione': ['Comunione e Liberazione'] }, names: {} })).toEqual([])
+    expect(splitWarnings('---')).toEqual([])
+    expect(splitWarnings(null)).toEqual([])
   })
 })
 

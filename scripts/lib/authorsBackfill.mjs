@@ -1,15 +1,16 @@
 import {
-  splitAuthors, makeCanon, applyCanon, joinAuthors, hyphenAmbiguities, compareKey, parseAuthorsColumn,
+  splitAuthors, normalizeList, splitWarnings, makeCanon, applyCanon, joinAuthors, hyphenAmbiguities, compareKey, parseAuthorsColumn,
 } from '../../src/utils/authors.mjs'
 
 /**
- * Calcola gli aggiornamenti `authors`/`artist`. La sorgente grezza è il backup di `artist`
- * (se esiste per quell'id), così un rilancio dopo una modifica alla mappa riparte dal valore
- * originale e non da quello già derivato.
+ * Calcola gli aggiornamenti `authors`/`artist`. Le righe con `authors` già valorizzato (scritte da
+ * un apply precedente, dal sync o dall'editor) non vengono rispezzate: si riapplicano solo alias e
+ * forma canonica. Per rispezzare da zero dopo aver cambiato un override: `authors:restore`, poi apply.
  */
-export function planBackfill(rows, aliases, backup = {}) {
-  const raws = rows.map((r) => backup[r.id] ?? r.artist ?? '')
-  const split = raws.map((raw) => splitAuthors(raw, aliases))
+export function planBackfill(rows, aliases) {
+  const done = rows.map((r) => parseAuthorsColumn(r.authors))
+  const raws = rows.map((r, i) => (done[i].length ? '' : r.artist ?? ''))
+  const split = rows.map((r, i) => (done[i].length ? normalizeList(done[i], aliases) : splitAuthors(r.artist ?? '', aliases)))
   const canon = makeCanon(split.flat(), aliases)
   const changes = []
   rows.forEach((row, i) => {
@@ -35,6 +36,11 @@ function buildReport(rows, raws, split, canon, aliases) {
   for (const raw of raws) {
     if (hyphenAmbiguities(raw, aliases).length) hyphens.set(raw, (hyphens.get(raw) ?? 0) + 1)
   }
+  const verify = new Map()
+  for (const raw of raws) {
+    const reasons = splitWarnings(raw, aliases)
+    if (reasons.length) verify.set(raw, { reasons, rows: (verify.get(raw)?.rows ?? 0) + 1 })
+  }
   const bySurname = new Map()
   for (const canonical of variants.keys()) {
     const last = compareKey(canonical.split(/\s+/).at(-1))
@@ -46,6 +52,7 @@ function buildReport(rows, raws, split, canon, aliases) {
     authors: variants.size,
     noAuthor: split.filter((names) => names.length === 0).length,
     unresolvedHyphens: [...hyphens].map(([raw, n]) => ({ raw, rows: n })).sort((a, b) => a.raw.localeCompare(b.raw)),
+    toVerify: [...verify].map(([raw, v]) => ({ raw, ...v })).sort((a, b) => a.raw.localeCompare(b.raw)),
     variantGroups: [...variants]
       .filter(([, forms]) => forms.size > 1)
       .map(([canonical, forms]) => ({

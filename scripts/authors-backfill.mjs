@@ -26,14 +26,15 @@ async function readBackup() {
 
 async function plan() {
   const supabase = connect()
-  const [rows, aliases, backup] = await Promise.all([fetchBackfillRows(supabase), loadAliases(ALIASES), readBackup()])
-  return { supabase, backup, ...planBackfill(rows, aliases, backup) }
+  const [rows, aliases] = await Promise.all([fetchBackfillRows(supabase), loadAliases(ALIASES)])
+  return { supabase, ...planBackfill(rows, aliases) }
 }
 
 function printReport({ changes, report }) {
   console.log(`righe: ${report.rows}; autori distinti: ${report.authors}; senza autore: ${report.noAuthor}`)
   console.log(`righe da aggiornare: ${changes.length}`)
   console.log(`"-" senza spazi da risolvere: ${report.unresolvedHyphens.length} (aggiungere override in scripts/authors-aliases.json)`)
+  console.log(`split dubbi da verificare (e, &, parentesi, trattino su un lato): ${report.toVerify.length} (aggiungere override se sbagliati)`)
   console.log(`gruppi di varianti unificate: ${report.variantGroups.length}; possibili alias per cognome: ${report.possibleAliases.length}`)
 }
 
@@ -49,7 +50,7 @@ async function applyPhase() {
   const result = await plan()
   printReport(result)
   if (!yes) { console.log('dry-run: nessuna scrittura. Rilanciare con --yes'); return }
-  const backup = { ...result.backup }
+  const backup = await readBackup()
   for (const c of result.changes) if (!(c.id in backup)) backup[c.id] = c.oldArtist // il backup esistente non si sovrascrive
   await mkdir(DIR, { recursive: true })
   await writeFile(BACKUP, JSON.stringify(backup, null, 2))

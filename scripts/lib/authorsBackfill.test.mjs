@@ -44,13 +44,30 @@ describe('planBackfill', () => {
     })
     expect(planBackfill(written, aliases).changes).toEqual([])
   })
-  it('usa il backup come sorgente grezza (rilancio dopo modifica alla mappa)', () => {
-    const al = { overrides: { 'P-Q': ['P', 'Q'] }, names: {} }
-    const first = planBackfill([row('1', 'P-Q', '[]')], al, { 1: 'P-Q' })
-    expect(first.changes[0].authors).toEqual(['P', 'Q'])
-    // già derivato (artist = "P, Q"): con il backup riparte dal valore grezzo "P-Q"
-    const derived = planBackfill([row('1', 'P, Q', '["P","Q"]')], { overrides: { 'P-Q': ['PQ'] }, names: {} }, { 1: 'P-Q' })
-    expect(derived.changes[0].authors).toEqual(['PQ'])
+  it('righe già scritte (authors non vuoto) non vengono rispezzate né perdono modifiche manuali', () => {
+    const { changes } = planBackfill([
+      row('1', 'Simon e Garfunkel', '["Simon e Garfunkel"]'),
+      row('2', 'Marco Frisina', '["Marco Frisina"]'),
+    ], EMPTY_ALIASES)
+    expect(changes).toEqual([])
+  })
+  it('righe già scritte: forme riunificate e alias applicati', () => {
+    const al = { overrides: {}, names: { 'M. Giombini': 'Marcello Giombini' } }
+    const { changes } = planBackfill([
+      row('1', 'RnS', '["RnS"]'), row('2', 'RnS', '["RnS"]'), row('3', 'RNS', '["RNS"]'),
+      row('4', 'M. Giombini', '["M. Giombini"]'),
+    ], al)
+    const by = Object.fromEntries(changes.map((c) => [c.id, c]))
+    expect(Object.keys(by).sort()).toEqual(['3', '4'])
+    expect(by['3'].authors).toEqual(['RnS'])
+    expect(by['4'].authors).toEqual(['Marcello Giombini'])
+  })
+  it('report: righe da verificare (e, &, parentesi, trattino su un lato)', () => {
+    const { report } = planBackfill([row('1', 'Walker & Deflorian'), row('2', 'Comunione e Liberazione'), row('3', 'Rossi')], EMPTY_ALIASES)
+    expect(report.toVerify).toEqual([
+      { raw: 'Comunione e Liberazione', reasons: ['e'], rows: 1 },
+      { raw: 'Walker & Deflorian', reasons: ['&'], rows: 1 },
+    ])
   })
   it('authors malformato in DB conta come vuoto', () => {
     const { changes } = planBackfill([row('1', 'Rossi', 'non json')], EMPTY_ALIASES)

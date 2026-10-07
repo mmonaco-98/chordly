@@ -17,4 +17,6 @@ export function resolveAuthors(
 ): string[]
 export function parseAuthorsInput(text: string | null | undefined, canon: Canon): string[]
 export function parseAuthorsColumn(value: string | null | undefined): string[]
+export function normalizeList(names: readonly string[], aliases?: Aliases): string[]
+export function splitWarnings(raw: string | null | undefined, aliases?: Aliases): string[]
 export function hyphenAmbiguities(raw: string | null | undefined, aliases?: Aliases): string[]
