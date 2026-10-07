@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-07T00:00:00Z",
+  "title": "Design System: Chordly",
+  "extensions": {
+    "colorMeta": {
+      "accent-dark": { "role": "primary", "displayName": "Azzurro Azione", "canonical": "#2f8fe0", "tonalRamp": ["#0a2339", "#0f3a63", "#145a9a", "#2f8fe0", "#4ba6f0", "#7fc0f5", "#b2d9fa", "#e0effd"] },
+      "accent-light-dark": { "role": "primary", "displayName": "Azzurro Accordo", "canonical": "#4ba6f0", "tonalRamp": ["#0a2339", "#0f3a63", "#145a9a", "#2f8fe0", "#4ba6f0", "#7fc0f5", "#b2d9fa", "#e0effd"] },
+      "bg-dark": { "role": "neutral", "displayName": "Notte Profonda", "canonical": "#10151b", "tonalRamp": ["#10151b", "#18212b", "#232f3c", "#3a4a5c", "#5a6c80", "#8d9cac", "#c3ccd6", "#eaf0f6"] },
+      "surface-dark": { "role": "neutral", "displayName": "Ardesia", "canonical": "#18212b", "tonalRamp": ["#10151b", "#18212b", "#232f3c", "#3a4a5c", "#5a6c80", "#8d9cac", "#c3ccd6", "#eaf0f6"] },
+      "surface-2-dark": { "role": "neutral", "displayName": "Ardesia Chiara", "canonical": "#232f3c", "tonalRamp": ["#10151b", "#18212b", "#232f3c", "#3a4a5c", "#5a6c80", "#8d9cac", "#c3ccd6", "#eaf0f6"] },
+      "text-dark": { "role": "neutral", "displayName": "Bianco Gelo", "canonical": "#eaf0f6", "tonalRamp": ["#10151b", "#18212b", "#232f3c", "#3a4a5c", "#5a6c80", "#8d9cac", "#c3ccd6", "#eaf0f6"] },
+      "danger": { "role": "tertiary", "displayName": "Rosso Elimina", "canonical": "#dc2626", "tonalRamp": ["#3b0a0a", "#5f1111", "#8a1818", "#b91c1c", "#dc2626", "#ef5a5a", "#f59a9a", "#fde0e0"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Titolo app nella lista." },
+      "title": { "displayName": "Title", "purpose": "Titolo canzone in header, azzurro." },
+      "label": { "displayName": "Label", "purpose": "Intestazioni di sezione e lettere, maiuscolo." },
+      "chord": { "displayName": "Chord", "purpose": "Accordi sopra il testo." }
+    },
+    "shadows": [
+      { "name": "floating-panel", "value": "0 12px 32px rgba(0,0,0,0.35)", "purpose": "Pannello sopra il dock." },
+      { "name": "popover", "value": "0 8px 24px rgba(0,0,0,0.35)", "purpose": "Combobox, tooltip, elemento trascinato." },
+      { "name": "modal", "value": "0 12px 40px rgba(0,0,0,0.4)", "purpose": "Modale di conferma." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Collapse dei filtri." },
+      { "name": "ease-panel", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Pannello 'altro'." },
+      { "name": "press", "value": "transform 0.1s", "purpose": "Scala 0.92-0.98 al tocco." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Song Card",
+      "kind": "card",
+      "refersTo": "song-card",
+      "description": "Voce di lista con titolo, autore e tonalità.",
+      "html": "<button class=\"ds-song-card\"><span class=\"ds-song-text\"><span class=\"ds-song-title\">Amazing Grace</span><span class=\"ds-song-artist\">Tradizionale</span></span><span class=\"ds-key\">G</span></button>",
+      "css": ".ds-song-card{display:flex;align-items:center;justify-content:space-between;gap:.75rem;width:100%;padding:.9rem 1rem;background:var(--surface,#18212b);color:var(--text,#eaf0f6);border:1px solid transparent;border-radius:12px;text-align:left;font:inherit;cursor:pointer;transition:background .15s,transform .1s}.ds-song-card:hover{background:var(--surface-2,#232f3c);border-color:var(--accent,#2f8fe0)}.ds-song-card:active{transform:scale(.98)}.ds-song-text{display:flex;flex-direction:column}.ds-song-title{font-weight:600}.ds-song-artist{font-size:.85rem;color:var(--text-muted,#8d9cac)}.ds-key{font-size:.8rem;font-weight:700;color:var(--chord,#4ba6f0);background:color-mix(in srgb,var(--chord,#4ba6f0) 14%,transparent);padding:.2rem .5rem;border-radius:6px}"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Ricerca titolo nella lista.",
+      "html": "<input class=\"ds-search\" placeholder=\"Cerca un canto\" />",
+      "css": ".ds-search{width:100%;padding:.6rem 1rem;border-radius:12px;border:1.5px solid var(--surface-2,#232f3c);background:var(--bg,#10151b);color:var(--text,#eaf0f6);font:inherit;font-size:1rem;outline:none;transition:border-color .2s}.ds-search:focus,.ds-search:focus-visible{border-color:var(--accent,#2f8fe0)}.ds-search::placeholder{color:var(--text-muted,#8d9cac)}"
+    },
+    {
+      "name": "Accent Button",
+      "kind": "custom",
+      "refersTo": "button-accent",
+      "description": "Azione primaria (conferma, aggiungi).",
+      "html": "<button class=\"ds-btn\">Aggiungi</button>",
+      "css": ".ds-btn{background:var(--accent,#2f8fe0);color:var(--on-accent,#06121d);border:none;border-radius:12px;padding:.65rem 1.25rem;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s}.ds-btn:hover{background:var(--accent-light,#4ba6f0)}.ds-btn:active{transform:scale(.96);opacity:.85}.ds-btn:focus-visible{outline:2px solid var(--accent-light,#4ba6f0);outline-offset:2px}"
+    },
+    {
+      "name": "Filter Chip Toggle",
+      "kind": "chip",
+      "description": "Toggle 'Cerca anche nel testo', stato attivo.",
+      "html": "<button class=\"ds-chip ds-chip-on\">Nel testo</button>",
+      "css": ".ds-chip{height:44px;padding:0 .75rem;font:inherit;font-size:.9rem;border-radius:12px;border:1.5px solid var(--surface-2,#232f3c);color:var(--text-muted,#8d9cac);background:transparent;cursor:pointer;transition:border-color .2s,color .2s,background-color .2s}.ds-chip-on{border-color:var(--accent,#2f8fe0);color:var(--accent-light,#4ba6f0);background:color-mix(in srgb,var(--accent,#2f8fe0) 16%,transparent)}"
+    },
+    {
+      "name": "Dock Group",
+      "kind": "nav",
+      "description": "Gruppo di controlli nel dock di SongView (trasposizione).",
+      "html": "<div class=\"ds-dock\"><button class=\"ds-dock-btn\">−</button><span class=\"ds-dock-val\">+2</span><button class=\"ds-dock-btn\">+</button></div>",
+      "css": ".ds-dock{display:inline-flex;align-items:center;gap:.1rem;padding:.2rem;background:var(--bg,#10151b);border:1px solid var(--surface-2,#232f3c);border-radius:14px}.ds-dock-btn{width:2.75rem;height:2.75rem;border-radius:10px;border:none;background:none;color:var(--accent-light,#4ba6f0);font:inherit;font-size:1.2rem;cursor:pointer;transition:background .15s,transform .1s}.ds-dock-btn:hover{background:var(--surface-2,#232f3c)}.ds-dock-btn:active{transform:scale(.92)}.ds-dock-val{min-width:3rem;text-align:center;font-weight:700;font-size:.9rem;color:var(--text,#eaf0f6)}"
+    },
+    {
+      "name": "Chord Sheet Chorus",
+      "kind": "custom",
+      "description": "Blocco ritornello con accordi sopra il testo.",
+      "html": "<div class=\"ds-chorus\"><div class=\"ds-chorus-tag\">RIT.</div><div class=\"ds-col\"><span class=\"ds-chord\">Am</span><span class=\"ds-lyric\">Amazing</span></div></div>",
+      "css": ".ds-chorus{position:relative;padding:1.9rem 1rem .9rem 1.2rem;background:color-mix(in srgb,var(--accent,#2f8fe0) 8%,var(--surface,#18212b));border-left:3px solid var(--accent,#2f8fe0);border-radius:0 12px 12px 0;color:var(--text,#eaf0f6)}.ds-chorus-tag{position:absolute;top:.65rem;left:1.1rem;font-size:.7rem;font-weight:700;letter-spacing:.12em;color:var(--text-muted,#8d9cac)}.ds-col{display:inline-flex;flex-direction:column}.ds-chord{color:var(--chord,#4ba6f0);font-weight:700;font-size:.74em;letter-spacing:.04em}.ds-lyric{font-weight:500}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Il Leggio Notturno",
+    "overview": "Un leggio al buio: superfici blu-ardesia che si ritraggono, e gli accordi azzurri come unica voce luminosa. Il canto è il protagonista; l'interfaccia serve a trovarlo in fretta e a restare fuori dai piedi mentre si suona.",
+    "keyCharacteristics": [
+      "Tema dark di default, light via data-theme=\"light\"; stesse variabili, valori diversi.",
+      "Un solo accento (azzurro), usato per titoli, accordi, stato attivo.",
+      "Header e dock traslucidi con blur, bordi sottili da 1px.",
+      "Target a 44px, feedback al tocco con scale(0.92–0.98)."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "L'azzurro è l'unico colore di accento. Compare su accordi, titoli e stato attivo; le superfici restano neutre.", "section": "colors" },
+      { "name": "The Mixed Tint Rule", "body": "Le tinte d'accento su sfondo si ottengono con color-mix(in srgb, var(--accent) N%, ...) (8–16%), mai con un secondo colore.", "section": "colors" },
+      { "name": "The Chord Above Rule", "body": "Gli accordi stanno sempre sopra la sillaba, più piccoli e più luminosi del testo, mai in linea.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "A riposo le superfici sono piatte; l'ombra indica solo che qualcosa sta sopra il contenuto.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usare solo le variabili (--bg, --surface, --surface-2, --accent, --chord, --text, --text-muted) e verificare ogni schermata in dark e light.",
+      "Do tenere i target tattili ad almeno 44px sulle azioni primarie e rispettare le safe area iOS.",
+      "Do lasciare :hover dentro @media (hover: hover) e dare sempre un feedback :active.",
+      "Do mantenere gli input a 16px o più per evitare lo zoom di iOS.",
+      "Do rispettare prefers-reduced-motion per le animazioni di pannelli e collapse."
+    ],
+    "donts": [
+      "Don't introdurre un secondo colore d'accento oltre all'azzurro (il rosso è riservato alle azioni distruttive).",
+      "Don't usare ombre sulle superfici a riposo, né bordi laterali colorati diversi dal filetto del ritornello.",
+      "Don't mettere gli accordi in linea con il testo o ridurre il contrasto di accordi e testi sotto la leggibilità dal vivo.",
+      "Don't rendere decorativo ciò che serve a suonare: niente animazioni lunghe, niente elementi che coprano il testo."
+    ]
+  }
+}
