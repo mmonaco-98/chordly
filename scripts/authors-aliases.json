@@ -1,0 +1,8 @@
+{
+  "overrides": {
+    "Avolio-Capacchione-La Rocca": ["Avolio", "Capacchione", "La Rocca"],
+    "Jean-Paul Lécot": ["Jean-Paul Lécot"],
+    "Gen rosso-verde": ["Gen Rosso", "Gen Verde"]
+  },
+  "names": {}
+}
