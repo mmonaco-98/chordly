@@ -5,7 +5,7 @@ import type { Song } from '../types'
 const s = (id: string, title: string, tags: string[] = [], artist = '', authors?: string[]): Song => ({
   id, title, artist, authors: authors ?? (artist.trim() ? [artist.trim()] : []), key: '', content: '', tags,
 })
-const none = { query: '', author: null, tag: null }
+const none = { query: '', author: null, tag: null, inText: false }
 
 describe('groupLetter', () => {
   it('lettere, accenti, cifre, simboli, vuoto', () => {
@@ -35,8 +35,8 @@ describe('filterAndGroup per autore', () => {
     expect(filterAndGroup(songs, { ...none, author: 'Rossi' }).filtered.map((x) => x.id)).toEqual(['2', '1'])
   })
   it('combina autore, raccolta e query', () => {
-    expect(filterAndGroup(songs, { query: 'un', author: 'Rossi', tag: 'a' }).filtered.map((x) => x.id)).toEqual(['1'])
-    expect(filterAndGroup(songs, { query: '', author: 'Bianchi', tag: 'b' }).filtered).toEqual([])
+    expect(filterAndGroup(songs, { ...none, query: 'un', author: 'Rossi', tag: 'a' }).filtered.map((x) => x.id)).toEqual(['1'])
+    expect(filterAndGroup(songs, { ...none, author: 'Bianchi', tag: 'b' }).filtered).toEqual([])
   })
 })
 
@@ -49,7 +49,7 @@ describe('uniqueAuthors', () => {
 
 describe('filtri <-> query param', () => {
   it('roundtrip', () => {
-    const f = { query: 'ciao', author: 'Rossi', tag: 'italiana' }
+    const f = { query: 'ciao', author: 'Rossi', tag: 'italiana', inText: true }
     expect(filtersFromParams(filtersToParams(f))).toEqual(f)
   })
   it('omette i valori vuoti', () => {
@@ -70,8 +70,8 @@ describe('autori multipli', () => {
     expect(filterAndGroup(songs, { ...none, author: 'De Luca' }).filtered.map((x) => x.id)).toEqual(['1'])
     expect(filterAndGroup(songs, { ...none, author: 'RnS' }).filtered.map((x) => x.id)).toEqual(['2', '1'])
   })
-  it('la ricerca testuale cerca ancora in artist', () => {
-    expect(filterAndGroup(songs, { ...none, query: 'luca' }).filtered.map((x) => x.id)).toEqual(['1'])
+  it('la ricerca testuale non cerca più in artist', () => {
+    expect(filterAndGroup(songs, { ...none, query: 'luca' }).filtered).toEqual([])
   })
   it('cache senza authors (precedente al deploy): ripiega su artist, senza crash', () => {
     const old = { ...s('1', 'a', [], 'Rossi'), authors: undefined as unknown as string[] }
@@ -81,5 +81,29 @@ describe('autori multipli', () => {
   it('cache senza authors con artist segnaposto → nessun autore', () => {
     const old = { ...s('1', 'a', [], '---'), authors: undefined as unknown as string[] }
     expect(uniqueAuthors([old])).toEqual([])
+  })
+})
+
+describe('ricerca nel testo', () => {
+  const withContent = (id: string, title: string, content: string): Song => ({ ...s(id, title), content })
+  const songs = [
+    withContent('1', 'Uno', '{title: Uno}\n{key: Am}\n\nci[Am]ao a[F]more'),
+    withContent('2', 'Due', '[Am]altro [F]testo'),
+  ]
+  it('senza check cerca solo nel titolo', () => {
+    expect(filterAndGroup(songs, { ...none, query: 'amore' }).filtered).toEqual([])
+  })
+  it('con check cerca nel testo ignorando accordi anche a metà parola', () => {
+    expect(filterAndGroup(songs, { ...none, query: 'ciao amore', inText: true }).filtered.map((x) => x.id)).toEqual(['1'])
+  })
+  it('ignora accordi e direttive', () => {
+    expect(filterAndGroup(songs, { ...none, query: 'am', inText: true }).filtered.map((x) => x.id)).toEqual(['1'])
+    expect(filterAndGroup(songs, { ...none, query: 'key', inText: true }).filtered).toEqual([])
+  })
+  it('con check trova ancora per titolo', () => {
+    expect(filterAndGroup(songs, { ...none, query: 'due', inText: true }).filtered.map((x) => x.id)).toEqual(['2'])
+  })
+  it('param intext omesso se spento', () => {
+    expect(filtersToParams({ ...none, inText: true }).toString()).toBe('intext=1')
   })
 })

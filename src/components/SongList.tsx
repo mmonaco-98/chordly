@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useDeferredValue, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Menu, Settings, Settings2, Plus, RotateCcw } from "lucide-react";
+import { Menu, Settings, Settings2, Plus, RotateCcw, TextSearch } from "lucide-react";
 import { SongCard } from "./SongCard";
 import { FilterCombobox } from "./FilterCombobox";
 import { TagDrawer, labelForTag } from "./TagDrawer";
@@ -19,7 +19,7 @@ export function SongList() {
   const songs = useSongs();
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => filtersFromParams(params), [params]);
-  const { query, author, tag: activeTag } = filters;
+  const { query, author, tag: activeTag, inText } = filters;
   const updateFilters = useCallback(
     (patch: Partial<ListFilters>) =>
       setParams(filtersToParams({ ...filters, ...patch }), { replace: true }),
@@ -47,8 +47,8 @@ export function SongList() {
     () => filterAndGroup(songs, { ...filters, query: deferredQuery }),
     [songs, filters, deferredQuery],
   );
-  const hasFilters = !!(author || activeTag);
-  const activeFilterCount = (author ? 1 : 0) + (activeTag ? 1 : 0);
+  const hasFilters = !!(author || activeTag || inText);
+  const activeFilterCount = (author ? 1 : 0) + (activeTag ? 1 : 0) + (inText ? 1 : 0);
   const [filtersOpen, setFiltersOpen] = useState(hasFilters);
   const authorOptions = useMemo(
     () => uniqueAuthors(songs).map((a) => ({ value: a, label: a })),
@@ -203,7 +203,7 @@ export function SongList() {
           <input
             className="song-list__search"
             type="search"
-            placeholder="Cerca canzone o artista..."
+            placeholder="Cerca canzone..."
             value={query}
             onChange={(e) => updateFilters({ query: e.target.value })}
             aria-label="Cerca canzone"
@@ -243,10 +243,20 @@ export function SongList() {
             onChange={(v) => updateFilters({ tag: v })}
           />
           <button
+            className={`icon-btn song-list__in-text${inText ? " song-list__in-text--on" : ""}`}
+            onClick={() => updateFilters({ inText: !inText })}
+            aria-pressed={inText}
+            aria-label="Cerca anche nel testo"
+            title="Cerca anche nel testo"
+          >
+            <TextSearch size={18} />
+            Testo
+          </button>
+          <button
             className="icon-btn song-list__reset"
-            onClick={() => updateFilters({ author: null, tag: null })}
+            onClick={() => updateFilters({ author: null, tag: null, inText: false })}
             disabled={!hasFilters}
-            aria-label="Azzera filtri autore e raccolta"
+            aria-label="Azzera filtri"
           >
             <RotateCcw size={18} />
           </button>

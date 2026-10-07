@@ -1080,7 +1080,7 @@ button {
 
 .song-list__filters {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr auto auto;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
@@ -2427,4 +2427,24 @@ button {
 
 .delete-modal__btn--delete:active:not(:disabled) {
   background: #b91c1c;
+}
+
+/* ─── Toggle "Cerca anche nel testo" (accanto ai filtri) ─── */
+.song-list__in-text {
+  flex-shrink: 0;
+  width: auto;
+  height: 44px;
+  gap: 0.35rem;
+  padding: 0 0.75rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--surface-2);
+  color: var(--text-muted);
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.song-list__in-text--on {
+  border-color: var(--accent);
+  color: var(--accent-light);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }

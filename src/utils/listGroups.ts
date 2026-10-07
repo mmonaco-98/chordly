@@ -8,17 +8,18 @@ export function groupLetter(title: string): string {
   return /[A-Za-z]/.test(first) ? first.toUpperCase() : '#'
 }
 
-export interface ListFilters { query: string; author: string | null; tag: string | null }
+export interface ListFilters { query: string; author: string | null; tag: string | null; inText: boolean }
 
 export function filtersFromParams(params: URLSearchParams): ListFilters {
-  return { query: params.get('q') ?? '', author: params.get('author') || null, tag: params.get('tag') || null }
+  return { query: params.get('q') ?? '', author: params.get('author') || null, tag: params.get('tag') || null, inText: params.get('intext') === '1' }
 }
 
-export function filtersToParams({ query, author, tag }: ListFilters): URLSearchParams {
+export function filtersToParams({ query, author, tag, inText }: ListFilters): URLSearchParams {
   const params = new URLSearchParams()
   if (query) params.set('q', query)
   if (author) params.set('author', author)
   if (tag) params.set('tag', tag)
+  if (inText) params.set('intext', '1')
   return params
 }
 
@@ -27,13 +28,27 @@ export function uniqueAuthors(songs: Song[]): string[] {
   return [...authors].sort((a, b) => a.localeCompare(b, 'it'))
 }
 
-export function filterAndGroup(songs: Song[], { query, author, tag }: ListFilters) {
+const lyricsCache = new WeakMap<Song, string>()
+
+function lyricsText(song: Song): string {
+  let text = lyricsCache.get(song)
+  if (text === undefined) {
+    text = (song.content ?? '')
+      .replace(/^\s*\{[^}]*\}\s*$/gm, '')
+      .replace(/\[[^\]]*\]/g, '')
+      .toLowerCase()
+    lyricsCache.set(song, text)
+  }
+  return text
+}
+
+export function filterAndGroup(songs: Song[], { query, author, tag, inText }: ListFilters) {
   const q = query.toLowerCase()
   const filtered = songs
     .filter((s) => {
       if (tag && !s.tags?.includes(tag)) return false
       if (author && !resolveAuthors(s.authors, s.artist).includes(author)) return false
-      return s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
+      return s.title.toLowerCase().includes(q) || (inText && lyricsText(s).includes(q))
     })
     .sort((a, b) => a.title.localeCompare(b.title, 'it'))
 
