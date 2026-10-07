@@ -1,17 +1,29 @@
 import { useState, useEffect, useRef, useCallback, useDeferredValue, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Menu, Settings2, X, Plus } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Menu, Settings, Settings2, Plus, ChevronDown, RotateCcw } from "lucide-react";
 import { SongCard } from "./SongCard";
 import { TagDrawer, labelForTag } from "./TagDrawer";
 import { usePlaylists } from "../hooks/usePlaylists";
 import { useSongs } from "../hooks/useSongs";
-import { filterAndGroup } from "../utils/listGroups";
+import {
+  filterAndGroup,
+  filtersFromParams,
+  filtersToParams,
+  uniqueAuthors,
+  type ListFilters,
+} from "../utils/listGroups";
 
 export function SongList() {
   const songs = useSongs();
-  const [query, setQuery] = useState("");
+  const [params, setParams] = useSearchParams();
+  const filters = useMemo(() => filtersFromParams(params), [params]);
+  const { query, author, tag: activeTag } = filters;
+  const updateFilters = useCallback(
+    (patch: Partial<ListFilters>) =>
+      setParams(filtersToParams({ ...filters, ...patch }), { replace: true }),
+    [filters, setParams],
+  );
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeTag, setActiveTag] = useState<string | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const activeLetterRef = useRef<string | null>(null);
@@ -29,10 +41,17 @@ export function SongList() {
     [songs],
   );
   const { filtered, groups } = useMemo(
-    () => filterAndGroup(songs, deferredQuery, activeTag),
-    [songs, deferredQuery, activeTag],
+    () => filterAndGroup(songs, { ...filters, query: deferredQuery }),
+    [songs, filters, deferredQuery],
   );
-  const navState = useMemo(() => ({ source: "list", tag: activeTag }), [activeTag]);
+  const hasFilters = !!(author || activeTag);
+  const activeFilterCount = (author ? 1 : 0) + (activeTag ? 1 : 0);
+  const [filtersOpen, setFiltersOpen] = useState(hasFilters);
+  const authors = useMemo(() => uniqueAuthors(songs), [songs]);
+  const navState = useMemo(
+    () => ({ source: "list" as const, ...filters }),
+    [filters],
+  );
 
   const showSidebar = !query && groups.length > 1;
 
@@ -137,9 +156,6 @@ export function SongList() {
       <TagDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        tags={allTags}
-        activeTag={activeTag}
-        onSelectTag={setActiveTag}
         playlists={playlists}
         onCreatePlaylist={createPlaylist}
         onDeletePlaylist={deletePlaylist}
@@ -169,30 +185,76 @@ export function SongList() {
               onClick={() => navigate("/settings")}
               aria-label="Impostazioni"
             >
-              <Settings2 size={20} />
+              <Settings size={20} />
             </button>
           </div>
         </div>
-        <input
-          className="song-list__search"
-          type="search"
-          placeholder="Cerca canzone o artista..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Cerca canzone"
-        />
-        <div className="song-list__pills">
-          {activeTag && (
-            <div className="active-tag-pill">
-              <span>{labelForTag(activeTag)}</span>
-              <button
-                onClick={() => setActiveTag(null)}
-                aria-label="Rimuovi filtro canzoniere"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          )}
+        <div className="song-list__search-row">
+          <input
+            className="song-list__search"
+            type="search"
+            placeholder="Cerca canzone o artista..."
+            value={query}
+            onChange={(e) => updateFilters({ query: e.target.value })}
+            aria-label="Cerca canzone"
+          />
+          <button
+            className={`icon-btn song-list__filters-toggle${filtersOpen ? " song-list__filters-toggle--open" : ""}`}
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-expanded={filtersOpen}
+            aria-controls="song-list-filters"
+            aria-label="Filtri"
+          >
+            <Settings2 size={18} />
+            {activeFilterCount > 0 && (
+              <span className="song-list__filters-badge">{activeFilterCount}</span>
+            )}
+          </button>
+        </div>
+        <div
+          id="song-list-filters"
+          className={`song-list__filters-collapse${filtersOpen ? " song-list__filters-collapse--open" : ""}`}
+        >
+          <div className="song-list__filters-clip">
+        <div className="song-list__filters">
+          <label className="filter-select">
+            <span className="visually-hidden">Autore</span>
+            <select
+              className={author ? "filter-select__input filter-select__input--active" : "filter-select__input"}
+              value={author ?? ""}
+              onChange={(e) => updateFilters({ author: e.target.value || null })}
+            >
+              <option value="">Tutti gli autori</option>
+              {authors.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+            <ChevronDown size={16} className="filter-select__chevron" aria-hidden="true" />
+          </label>
+          <label className="filter-select">
+            <span className="visually-hidden">Raccolta</span>
+            <select
+              className={activeTag ? "filter-select__input filter-select__input--active" : "filter-select__input"}
+              value={activeTag ?? ""}
+              onChange={(e) => updateFilters({ tag: e.target.value || null })}
+            >
+              <option value="">Tutte le raccolte</option>
+              {allTags.map((tg) => (
+                <option key={tg} value={tg}>{labelForTag(tg)}</option>
+              ))}
+            </select>
+            <ChevronDown size={16} className="filter-select__chevron" aria-hidden="true" />
+          </label>
+          <button
+            className="icon-btn song-list__reset"
+            onClick={() => updateFilters({ author: null, tag: null })}
+            disabled={!hasFilters}
+            aria-label="Azzera filtri autore e raccolta"
+          >
+            <RotateCcw size={18} />
+          </button>
+        </div>
+          </div>
         </div>
       </header>
 

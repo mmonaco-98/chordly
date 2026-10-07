@@ -137,6 +137,21 @@ button {
   letter-spacing: -0.5px;
 }
 
+.song-list__reset {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--surface-2);
+  color: var(--accent-light);
+  transition: opacity 0.2s;
+}
+
+.song-list__reset:disabled {
+  opacity: 0.35;
+  color: var(--text-muted);
+}
+
 .song-list__search {
   width: 100%;
   padding: 0.6rem 1rem;
@@ -991,39 +1006,132 @@ button {
 }
 
 /* ─── Active tag pill ─── */
-.song-list__pills {
+.song-list__search-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.song-list__search-row .song-list__search {
+  flex: 1;
+  min-width: 0;
+}
+
+.song-list__filters-toggle {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--surface-2);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.song-list__filters-toggle--open {
+  border-color: var(--accent);
+  color: var(--accent-light);
+}
+
+.song-list__filters-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.song-list__filters-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s 0.28s;
+}
+
+.song-list__filters-collapse--open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.song-list__filters-clip {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .song-list__filters-collapse {
+    transition: none;
+  }
+}
+
+.song-list__filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-.active-tag-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--accent);
-  color: var(--on-accent);
-  border-radius: 999px;
-  padding: 0.2rem 0.4rem 0.2rem 0.75rem;
-  font-size: 0.85rem;
+.filter-select {
+  position: relative;
+  min-width: 0;
+}
+
+.filter-select__input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 2rem 0 0.85rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--surface-2);
+  background: var(--bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.filter-select__input:focus-visible {
+  border-color: var(--accent);
+}
+
+.filter-select__input--active {
+  border-color: var(--accent);
+  color: var(--text);
   font-weight: 600;
 }
 
-.active-tag-pill--playlist {
-  background: #c0478a;
+.filter-select__chevron {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
-.active-tag-pill button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255, 255, 255, 0.8);
-  transition: color 0.15s;
+.filter-select__input--active + .filter-select__chevron {
+  color: var(--accent-light);
 }
 
-.active-tag-pill button:active {
-  color: var(--on-accent);
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* ─── Tag Drawer ─── */

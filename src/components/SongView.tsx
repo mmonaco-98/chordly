@@ -39,9 +39,10 @@ import { PlaylistModal } from "./PlaylistModal";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import type { Song } from "../types";
 import { useCapo, toRoman } from "../hooks/useCapo";
+import { filterAndGroup, type ListFilters } from "../utils/listGroups";
 
 type NavState =
-  | { source: "list"; tag: string | null }
+  | ({ source: "list" } & ListFilters)
   | { source: "playlist"; playlistId: string };
 
 export function SongView() {
@@ -57,10 +58,7 @@ export function SongView() {
   const navList = useMemo<Song[]>(() => {
     if (!navState) return [];
     if (navState.source === "list") {
-      const tag = navState.tag;
-      return songs
-        .filter((s) => !tag || s.tags?.includes(tag))
-        .sort((a, b) => a.title.localeCompare(b.title, "it"));
+      return filterAndGroup(songs, navState).filtered;
     }
     if (navState.source === "playlist") {
       const playlist = playlists.find((p) => p.id === navState.playlistId);
@@ -70,7 +68,7 @@ export function SongView() {
         .filter((s): s is Song => s !== undefined);
     }
     return [];
-  }, [navState, playlists]);
+  }, [navState, playlists, songs]);
 
   const currentIndex = navList.findIndex((s) => s.id === id);
   const prevSong = currentIndex > 0 ? navList[currentIndex - 1] : null;

@@ -7,11 +7,31 @@ export function groupLetter(title: string): string {
   return /[A-Za-z]/.test(first) ? first.toUpperCase() : '#'
 }
 
-export function filterAndGroup(songs: Song[], query: string, tag: string | null) {
+export interface ListFilters { query: string; author: string | null; tag: string | null }
+
+export function filtersFromParams(params: URLSearchParams): ListFilters {
+  return { query: params.get('q') ?? '', author: params.get('author') || null, tag: params.get('tag') || null }
+}
+
+export function filtersToParams({ query, author, tag }: ListFilters): URLSearchParams {
+  const params = new URLSearchParams()
+  if (query) params.set('q', query)
+  if (author) params.set('author', author)
+  if (tag) params.set('tag', tag)
+  return params
+}
+
+export function uniqueAuthors(songs: Song[]): string[] {
+  const authors = new Set(songs.map((s) => s.artist.trim()).filter(Boolean))
+  return [...authors].sort((a, b) => a.localeCompare(b, 'it'))
+}
+
+export function filterAndGroup(songs: Song[], { query, author, tag }: ListFilters) {
   const q = query.toLowerCase()
   const filtered = songs
     .filter((s) => {
       if (tag && !s.tags?.includes(tag)) return false
+      if (author && s.artist.trim() !== author) return false
       return s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
     })
     .sort((a, b) => a.title.localeCompare(b.title, 'it'))

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   X,
-  Music,
   Heart,
   Trash2,
   Plus,
@@ -93,9 +92,6 @@ function SortablePlaylistItem({
 interface Props {
   open: boolean;
   onClose: () => void;
-  tags: string[];
-  activeTag: string | null;
-  onSelectTag: (tag: string | null) => void;
   playlists: Playlist[];
   onCreatePlaylist: (name: string) => void;
   onDeletePlaylist: (id: string) => void;
@@ -119,9 +115,6 @@ function labelForTag(tag: string): string {
 export function TagDrawer({
   open,
   onClose,
-  tags,
-  activeTag,
-  onSelectTag,
   playlists,
   onCreatePlaylist,
   onDeletePlaylist,
@@ -145,11 +138,6 @@ export function TagDrawer({
     const oldIndex = ids.indexOf(active.id as string);
     const newIndex = ids.indexOf(over.id as string);
     onReorderPlaylists(arrayMove(ids, oldIndex, newIndex));
-  };
-
-  const handleSelectTag = (tag: string | null) => {
-    onSelectTag(tag);
-    onClose();
   };
 
   const handleSelectPlaylist = (id: string) => {
@@ -284,31 +272,6 @@ export function TagDrawer({
                   </button>
                 )}
               </li>
-            </ul>
-          </div>
-          {/* Canzonieri */}
-          <div>
-            <p className="tag-drawer__section-header tag-drawer__section-header--spaced">Raccolte</p>
-            <ul className="tag-drawer__list" role="list">
-              <li>
-                <button
-                  className={`tag-drawer__item${activeTag === null ? " tag-drawer__item--active" : ""}`}
-                  onClick={() => handleSelectTag(null)}
-                >
-                  <Music size={18} strokeWidth={2} />
-                  Tutti
-                </button>
-              </li>
-              {tags.map((tag) => (
-                <li key={tag}>
-                  <button
-                    className={`tag-drawer__item${activeTag === tag ? " tag-drawer__item--active" : ""}`}
-                    onClick={() => handleSelectTag(tag)}
-                  >
-                    {labelForTag(tag)}
-                  </button>
-                </li>
-              ))}
             </ul>
           </div>
         </div>
