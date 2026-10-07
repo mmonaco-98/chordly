@@ -1,4 +1,7 @@
 import { convertCanto, bigCollections } from './convertCanto.mjs'
+import {
+  makeCanon, applyCanon, joinAuthors, hyphenAmbiguities, parseAuthorsColumn, EMPTY_ALIASES,
+} from '../../src/utils/authors.mjs'
 
 export const MIN_API_ROWS = 1000
 export const DEFAULT_MAX_NEW = 50
@@ -48,7 +51,7 @@ export async function fetchCantiRows(url, fetchImpl = fetch) {
   return data
 }
 
-export function convertAll(rows) {
+export function convertAll(rows, aliases = EMPTY_ALIASES) {
   const big = bigCollections(rows, 5)
   const ids = new Set()
   const songs = []
@@ -56,7 +59,7 @@ export function convertAll(rows) {
   for (const raw of rows) {
     let song
     try {
-      ({ song } = convertCanto(raw, { bigCollections: big }))
+      ({ song } = convertCanto(raw, { bigCollections: big, aliases }))
       if (!song.title) throw new Error('titolo vuoto')
       if (ids.has(song.id)) throw new Error('id duplicato')
       ids.add(song.id)
@@ -79,11 +82,36 @@ export async function listCantiIds(supabase, page = 1000) {
   }
 }
 
+/** Tutti gli autori presenti nel DB (occorrenze, per calcolare la forma canonica più frequente). */
+export async function listAllAuthors(supabase, page = 1000) {
+  const names = []
+  for (let from = 0; ; from += page) {
+    const { data, error } = await supabase.from('songs').select('authors').order('id').range(from, from + page - 1)
+    if (error) throw new Error(`lettura autori: ${error.message}`)
+    for (const r of data) names.push(...parseAuthorsColumn(r.authors))
+    if (data.length < page) return names
+  }
+}
+
+/** Uniforma gli autori dei canti nuovi alle forme già presenti nel DB. */
+export function canonicalizeSongs(songs, existingNames, aliases = EMPTY_ALIASES) {
+  // le forme già nel DB hanno la precedenza; per gli autori nuovi vale la frequenza tra i canti nuovi
+  const canon = new Map([
+    ...makeCanon(songs.flatMap((s) => s.authors ?? []), aliases),
+    ...makeCanon(existingNames, aliases),
+  ])
+  return songs.map((s) => {
+    if (!Array.isArray(s.authors)) return s
+    const authors = applyCanon(s.authors, canon)
+    return { ...s, authors, artist: joinAuthors(authors) }
+  })
+}
+
 export async function insertSongs(supabase, songs, now, batch = 100) {
   for (let i = 0; i < songs.length; i += batch) {
     const rows = songs.slice(i, i + batch).map((s, j) => ({
       id: s.id, title: s.title, artist: s.artist, song_key: s.key, bpm: null,
-      content: s.content, tags: JSON.stringify(s.tags), updated_at: now + i + j,
+      content: s.content, tags: JSON.stringify(s.tags), authors: JSON.stringify(s.authors ?? []), updated_at: now + i + j,
     }))
     const { error } = await supabase.from('songs').upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
     if (error) throw new Error(`batch ${i}: ${error.message}`)
@@ -92,17 +120,23 @@ export async function insertSongs(supabase, songs, now, batch = 100) {
 
 export async function runSync({
   supabase, fetchRows, convertAll, check, yes,
-  maxNew = DEFAULT_MAX_NEW, now = Date.now(), log = console.log,
+  maxNew = DEFAULT_MAX_NEW, now = Date.now(), log = console.log, aliases = EMPTY_ALIASES,
 }) {
   const rows = await fetchRows()
-  const { songs, skipped: unconvertible } = convertAll(rows)
+  const { songs, skipped: unconvertible } = convertAll(rows, aliases)
   if (unconvertible.length > rows.length * MAX_UNCONVERTIBLE_RATIO) {
     throw new Error(`${unconvertible.length}/${rows.length} canti inconvertibili: schema API cambiato? Nessuna scrittura.`)
   }
   const existing = await listCantiIds(supabase)
   const fresh = pickNewSongs(songs, existing)
   assertSane({ rawCount: rows.length, newCount: fresh.length, maxNew })
-  const { ok, skipped: unparsable } = splitParsable(fresh, check)
+  const { ok: parsed, skipped: unparsable } = splitParsable(fresh, check)
+  const ok = parsed.length ? canonicalizeSongs(parsed, await listAllAuthors(supabase), aliases) : parsed
+  for (const s of ok) {
+    for (const a of s.authors ?? []) {
+      if (hyphenAmbiguities(a, aliases).length) log(`  ? ${s.id}: autore con "-" da verificare in scripts/authors-aliases.json: ${a}`)
+    }
+  }
   const skipped = [...unconvertible, ...unparsable]
   log(`API: ${rows.length}; in DB: ${existing.length}; nuovi: ${fresh.length}; saltati: ${skipped.length}`)
   for (const s of skipped) log(`  saltato ${s.id}: ${s.error}`)

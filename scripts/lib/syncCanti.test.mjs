@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   extractCantoId, pickNewSongs, assertSane, splitParsable, fetchCantiRows, convertAll,
-  listCantiIds, insertSongs, runSync,
+  listCantiIds, insertSongs, runSync, listAllAuthors, canonicalizeSongs,
   MIN_API_ROWS, DEFAULT_MAX_NEW,
 } from './syncCanti.mjs'
 
@@ -94,7 +94,7 @@ describe('convertAll', () => {
   })
 })
 
-function fakeSupabase(existing = []) {
+function fakeSupabase(existing = [], authors = '[]') {
   const upserts = []
   const likes = []
   return {
@@ -104,7 +104,7 @@ function fakeSupabase(existing = []) {
         select() { return q },
         like(col, pat) { likes.push([col, pat]); return q },
         order() { return q },
-        range: async (a, b) => ({ data: existing.slice(a, b + 1).map((id) => ({ id })), error: null }),
+        range: async (a, b) => ({ data: existing.slice(a, b + 1).map((id) => ({ id, authors })), error: null }),
         upsert: async (rows, opts) => { upserts.push({ rows, opts }); return { error: null } },
       }
       return q
@@ -134,6 +134,40 @@ describe('insertSongs', () => {
     const all = db.upserts.flatMap((u) => u.rows)
     expect(all.map((r) => r.updated_at)).toEqual([1000, 1001, 1002])
     expect(all[0]).toMatchObject({ id: 'a-1', song_key: '', bpm: null, tags: '["canticristiani"]' })
+  })
+})
+
+describe('insertSongs: authors', () => {
+  it('scrive la colonna authors come JSON, [] se assente', async () => {
+    const db = fakeSupabase()
+    await insertSongs(db, [{ ...song('a-1'), authors: ['RnS', 'De Luca'] }, song('b-2')], 1000)
+    const rows = db.upserts.flatMap((u) => u.rows)
+    expect(rows.map((r) => r.authors)).toEqual(['["RnS","De Luca"]', '[]'])
+  })
+})
+
+describe('listAllAuthors', () => {
+  it('legge e appiattisce gli autori, paginando', async () => {
+    const db = fakeSupabase(['1', '2', '3'], '["A","B"]')
+    expect(await listAllAuthors(db, 2)).toEqual(['A', 'B', 'A', 'B', 'A', 'B'])
+  })
+  it('righe senza authors valido contano come vuote', async () => {
+    expect(await listAllAuthors(fakeSupabase(['1'], 'non json'))).toEqual([])
+  })
+})
+
+describe('canonicalizeSongs', () => {
+  it('porta gli autori alla forma più frequente nel DB e ricalcola artist', () => {
+    const out = canonicalizeSongs(
+      [{ ...song('a-1'), authors: ['RNS', 'De Luca'], artist: 'RNS, De Luca' }],
+      ['RnS', 'RnS', 'RNS'],
+      { overrides: {}, names: {} },
+    )
+    expect(out[0]).toMatchObject({ authors: ['RnS', 'De Luca'], artist: 'RnS, De Luca' })
+  })
+  it('lascia invariate le canzoni senza authors', () => {
+    const s = song('a-1')
+    expect(canonicalizeSongs([s], [], { overrides: {}, names: {} })).toEqual([s])
   })
 })
 
@@ -192,5 +226,23 @@ describe('runSync', () => {
   it('errore Supabase in lettura: lancia', async () => {
     const db = { from: () => { const q = { select: () => q, like: () => q, order: () => q, range: async () => ({ data: null, error: { message: 'rls' } }) }; return q } }
     await expect(runSync({ supabase: db, ...base() })).rejects.toThrow(/rls/)
+  })
+  it('unifica gli autori dei nuovi canti sulla forma presente nel DB', async () => {
+    const existing = apiRows.slice(0, MIN_API_ROWS - 3).map((r) => `x-${r.id_canti}`)
+    const db = fakeSupabase(existing, '["RnS"]')
+    const convRns = (rows) => ({ songs: rows.map((r) => ({ ...song(`t-${r.id_canti}`), artist: 'RNS', authors: ['RNS'] })), skipped: [] })
+    await runSync({ supabase: db, ...base({ convertAll: convRns }) })
+    const rows = db.upserts.flatMap((u) => u.rows)
+    expect(rows.map((r) => r.authors)).toEqual(['["RnS"]', '["RnS"]', '["RnS"]'])
+    expect(rows.map((r) => r.artist)).toEqual(['RnS', 'RnS', 'RnS'])
+  })
+  it('logga gli autori con "-" senza spazi non risolti, ma importa', async () => {
+    const existing = apiRows.slice(0, MIN_API_ROWS - 1).map((r) => `x-${r.id_canti}`)
+    const db = fakeSupabase(existing)
+    const logs = []
+    const convHyphen = (rows) => ({ songs: rows.map((r) => ({ ...song(`t-${r.id_canti}`), artist: 'Negrini-Frigerio', authors: ['Negrini-Frigerio'] })), skipped: [] })
+    const res = await runSync({ supabase: db, ...base({ convertAll: convHyphen, log: (m) => logs.push(m) }) })
+    expect(res.inserted).toBe(1)
+    expect(logs.some((l) => l.includes('Negrini-Frigerio'))).toBe(true)
   })
 })

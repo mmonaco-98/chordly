@@ -1,4 +1,5 @@
 import { convertChordIt, keyOfChord } from './convertChordIt.mjs'
+import { splitAuthors, joinAuthors, EMPTY_ALIASES } from '../../src/utils/authors.mjs'
 
 const RENAME = {
   start_chorus: 'start_of_chorus', soc: 'start_of_chorus', start_of_chorus: 'start_of_chorus',
@@ -79,12 +80,14 @@ export function convertCanto(raw, opts = {}) {
   const collection = (raw.raccolta ?? '').trim()
   const tags = ['canticristiani']
   if (collection && opts.bigCollections?.has(collection)) tags.push(collection)
+  const authors = splitAuthors(raw.autore, opts.aliases ?? EMPTY_ALIASES)
 
   return {
     song: {
       id: `${slugify(raw.titolo)}-${raw.id_canti}`,
       title: raw.titolo.trim(),
-      artist: (raw.autore ?? '').trim(),
+      artist: joinAuthors(authors),
+      authors,
       key: firstChord ? keyOfChord(firstChord) : '',
       content,
       tags,

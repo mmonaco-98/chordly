@@ -4,12 +4,14 @@ import { createClient } from '@supabase/supabase-js'
 import ChordSheetJS from 'chordsheetjs'
 import { convertCanto, bigCollections } from './lib/convertCanto.mjs'
 import { runSync, fetchCantiRows, convertAll } from './lib/syncCanti.mjs'
+import { loadAliases } from './lib/loadAliases.mjs'
 
 const API_URL = 'https://www.canticristiani.it/api/canti.json'
 const DIR = new URL('./data/', import.meta.url)
 const RAW = new URL('canti.raw.json', DIR)
 const PREVIEW = new URL('songs.preview.json', DIR)
 const REPORT = new URL('report.json', DIR)
+const ALIASES = new URL('./authors-aliases.json', import.meta.url)
 const BATCH = 100
 
 const cmd = process.argv[2]
@@ -41,6 +43,7 @@ async function fetchPhase() {
 async function convertPhase() {
   const rows = JSON.parse(await readFile(RAW, 'utf8'))
   const big = bigCollections(rows, 5)
+  const aliases = await loadAliases(ALIASES)
   const songs = []
   const unknown = {}
   const dropped = {}
@@ -48,7 +51,7 @@ async function convertPhase() {
   const ids = new Set()
   const unparsable = []
   for (const raw of rows) {
-    const { song, report } = convertCanto(raw, { bigCollections: big })
+    const { song, report } = convertCanto(raw, { bigCollections: big, aliases })
     if (!song.title || ids.has(song.id)) throw new Error(`titolo vuoto o id duplicato: ${song.id}`)
     ids.add(song.id)
     try { new ChordSheetJS.ChordProParser().parse(song.content).transpose(1) } catch (e) { unparsable.push(`${song.id}: ${e.message}`) }
@@ -80,7 +83,7 @@ async function uploadPhase() {
   for (let i = 0; i < songs.length; i += BATCH) {
     const rows = songs.slice(i, i + BATCH).map((s, j) => ({
       id: s.id, title: s.title, artist: s.artist, song_key: s.key, bpm: null,
-      content: s.content, tags: JSON.stringify(s.tags), updated_at: now + i + j,
+      content: s.content, tags: JSON.stringify(s.tags), authors: JSON.stringify(s.authors ?? []), updated_at: now + i + j,
     }))
     const { error } = await supabase.from('songs').upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
     if (error) throw new Error(`batch ${i}: ${error.message}`)
@@ -92,10 +95,11 @@ async function uploadPhase() {
 async function syncPhase() {
   loadEnv()
   const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+  const aliases = await loadAliases(ALIASES)
   await runSync({
-    supabase, yes, maxNew: parseMaxNew(),
+    supabase, yes, maxNew: parseMaxNew(), aliases,
     fetchRows: () => fetchCantiRows(API_URL),
-    convertAll,
+    convertAll: (rows) => convertAll(rows, aliases),
     check: (s) => { new ChordSheetJS.ChordProParser().parse(s.content).transpose(1) },
   })
 }

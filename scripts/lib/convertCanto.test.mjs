@@ -23,6 +23,23 @@ describe('convertCanto', () => {
     expect(song.key).toBe('D')
     expect(song.tags).toEqual(['canticristiani'])
   })
+  it('authors: separa, normalizza e deriva artist', () => {
+    const { song } = convertCanto(raw({ autore: ' RnS - De Luca, Aguila ' }))
+    expect(song.authors).toEqual(['RnS', 'De Luca', 'Aguila'])
+    expect(song.artist).toBe('RnS, De Luca, Aguila')
+  })
+  it('autore mancante o segnaposto: authors vuoto, artist vuoto', () => {
+    for (const autore of [undefined, null, '', '---']) {
+      const { song } = convertCanto(raw({ autore }))
+      expect(song.authors).toEqual([])
+      expect(song.artist).toBe('')
+    }
+  })
+  it('usa gli override della mappa alias', () => {
+    const aliases = { overrides: { 'Avolio-Capacchione-La Rocca': ['Avolio', 'Capacchione', 'La Rocca'] }, names: {} }
+    const { song } = convertCanto(raw({ autore: 'Avolio-Capacchione-La Rocca' }), { aliases })
+    expect(song.authors).toEqual(['Avolio', 'Capacchione', 'La Rocca'])
+  })
   it('tag raccolta solo se grande', () => {
     const big = new Set(['Tu sarai profeta'])
     expect(convertCanto(raw(), { bigCollections: big }).song.tags).toEqual(['canticristiani', 'Tu sarai profeta'])
