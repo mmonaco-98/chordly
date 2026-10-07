@@ -5,6 +5,7 @@ import { useCreateSong, useUpdateSong } from '../hooks/useSongs'
 import { useSongs } from '../hooks/useSongs'
 import type { Song } from '../types'
 import { ContentToolbar } from './ContentToolbar'
+import { joinAuthors, makeCanon, parseAuthorsInput, resolveAuthors } from '../utils/authors.mjs'
 
 function slugify(text: string): string {
   return text
@@ -34,7 +35,7 @@ export function SongEditor() {
   useEffect(() => {
     if (isEditMode && editingSong) {
       setTitle(editingSong.title)
-      setArtist(editingSong.artist)
+      setArtist(joinAuthors(resolveAuthors(editingSong.authors, editingSong.artist)))
       setKey(editingSong.key ?? '')
       setTags(editingSong.tags?.join(', ') ?? '')
       setId(editingSong.id)
@@ -78,10 +79,13 @@ export function SongEditor() {
   }
 
   async function handleSubmit() {
+    const canon = makeCanon(songs.flatMap((s) => resolveAuthors(s.authors, s.artist)))
+    const authors = parseAuthorsInput(artist, canon)
     const song: Song = {
       id,
       title,
-      artist,
+      artist: joinAuthors(authors),
+      authors,
       key,
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       content,

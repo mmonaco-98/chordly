@@ -1,4 +1,5 @@
 import type { Song } from '../types'
+import { resolveAuthors } from './authors.mjs'
 
 export interface LetterGroup { letter: string; items: Song[] }
 
@@ -22,7 +23,7 @@ export function filtersToParams({ query, author, tag }: ListFilters): URLSearchP
 }
 
 export function uniqueAuthors(songs: Song[]): string[] {
-  const authors = new Set(songs.map((s) => s.artist.trim()).filter(Boolean))
+  const authors = new Set(songs.flatMap((s) => resolveAuthors(s.authors, s.artist)))
   return [...authors].sort((a, b) => a.localeCompare(b, 'it'))
 }
 
@@ -31,7 +32,7 @@ export function filterAndGroup(songs: Song[], { query, author, tag }: ListFilter
   const filtered = songs
     .filter((s) => {
       if (tag && !s.tags?.includes(tag)) return false
-      if (author && s.artist.trim() !== author) return false
+      if (author && !resolveAuthors(s.authors, s.artist).includes(author)) return false
       return s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)
     })
     .sort((a, b) => a.title.localeCompare(b.title, 'it'))

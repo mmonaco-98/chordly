@@ -48,6 +48,7 @@ export async function createSong(song: Song): Promise<Song> {
       id: song.id,
       title: song.title,
       artist: song.artist,
+      authors: JSON.stringify(song.authors),
       song_key: song.key,
       bpm: song.bpm,
       content: song.content,
@@ -68,6 +69,7 @@ export async function updateSong(song: Song): Promise<Song> {
     .update({
       title: song.title,
       artist: song.artist,
+      authors: JSON.stringify(song.authors),
       song_key: song.key,
       bpm: song.bpm,
       content: song.content,

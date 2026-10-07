@@ -2,6 +2,7 @@ export interface Song {
   id: string
   title: string
   artist: string
+  authors: string[]
   key: string
   bpm?: number
   content: string

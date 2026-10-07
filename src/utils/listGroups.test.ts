@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { groupLetter, filterAndGroup, filtersFromParams, filtersToParams, uniqueAuthors } from './listGroups'
 import type { Song } from '../types'
 
-const s = (id: string, title: string, tags: string[] = [], artist = ''): Song => ({ id, title, artist, key: '', content: '', tags })
+const s = (id: string, title: string, tags: string[] = [], artist = '', authors?: string[]): Song => ({
+  id, title, artist, authors: authors ?? (artist.trim() ? [artist.trim()] : []), key: '', content: '', tags,
+})
 const none = { query: '', author: null, tag: null }
 
 describe('groupLetter', () => {
@@ -53,5 +55,31 @@ describe('filtri <-> query param', () => {
   it('omette i valori vuoti', () => {
     expect(filtersToParams(none).toString()).toBe('')
     expect(filtersFromParams(new URLSearchParams())).toEqual(none)
+  })
+})
+
+describe('autori multipli', () => {
+  const songs = [
+    s('1', 'Uno', [], 'RnS, De Luca', ['RnS', 'De Luca']),
+    s('2', 'Due', [], 'RnS', ['RnS']),
+  ]
+  it('uniqueAuthors elenca ogni autore singolarmente', () => {
+    expect(uniqueAuthors(songs)).toEqual(['De Luca', 'RnS'])
+  })
+  it('il filtro autore trova le canzoni dove compare tra più autori', () => {
+    expect(filterAndGroup(songs, { ...none, author: 'De Luca' }).filtered.map((x) => x.id)).toEqual(['1'])
+    expect(filterAndGroup(songs, { ...none, author: 'RnS' }).filtered.map((x) => x.id)).toEqual(['2', '1'])
+  })
+  it('la ricerca testuale cerca ancora in artist', () => {
+    expect(filterAndGroup(songs, { ...none, query: 'luca' }).filtered.map((x) => x.id)).toEqual(['1'])
+  })
+  it('cache senza authors (precedente al deploy): ripiega su artist, senza crash', () => {
+    const old = { ...s('1', 'a', [], 'Rossi'), authors: undefined as unknown as string[] }
+    expect(uniqueAuthors([old])).toEqual(['Rossi'])
+    expect(filterAndGroup([old], { ...none, author: 'Rossi' }).filtered).toHaveLength(1)
+  })
+  it('cache senza authors con artist segnaposto → nessun autore', () => {
+    const old = { ...s('1', 'a', [], '---'), authors: undefined as unknown as string[] }
+    expect(uniqueAuthors([old])).toEqual([])
   })
 })
