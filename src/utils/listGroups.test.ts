@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupLetter, filterAndGroup, filtersFromParams, filtersToParams, uniqueAuthors } from './listGroups'
+import { groupLetter, filterAndGroup, filtersFromParams, filtersToParams, uniqueAuthors, uniqueTags } from './listGroups'
 import type { Song } from '../types'
 
 const s = (id: string, title: string, tags: string[] = [], artist = '', authors?: string[]): Song => ({
@@ -41,9 +41,16 @@ describe('filterAndGroup per autore', () => {
 })
 
 describe('uniqueAuthors', () => {
-  it('distinti, ordinati in italiano, senza vuoti', () => {
-    const songs = [s('1', 'a', [], 'Zucchero'), s('2', 'b', [], 'Álvaro'), s('3', 'c', [], 'Zucchero'), s('4', 'd', [], ' ')]
-    expect(uniqueAuthors(songs)).toEqual(['Álvaro', 'Zucchero'])
+  it('distinti, per occorrenze decrescenti, a parità alfabetico, senza vuoti', () => {
+    const songs = [s('1', 'a', [], 'Zucchero'), s('2', 'b', [], 'Álvaro'), s('3', 'c', [], 'Zucchero'), s('4', 'd', [], ' '), s('5', 'e', [], 'Bano')]
+    expect(uniqueAuthors(songs)).toEqual(['Zucchero', 'Álvaro', 'Bano'])
+  })
+})
+
+describe('uniqueTags', () => {
+  it('per occorrenze decrescenti, a parità alfabetico', () => {
+    const songs = [s('1', 'a', ['b', 'a']), s('2', 'b', ['c', 'b']), s('3', 'c', ['b'])]
+    expect(uniqueTags(songs)).toEqual(['b', 'a', 'c'])
   })
 })
 
@@ -64,7 +71,7 @@ describe('autori multipli', () => {
     s('2', 'Due', [], 'RnS', ['RnS']),
   ]
   it('uniqueAuthors elenca ogni autore singolarmente', () => {
-    expect(uniqueAuthors(songs)).toEqual(['De Luca', 'RnS'])
+    expect(uniqueAuthors(songs)).toEqual(['RnS', 'De Luca'])
   })
   it('il filtro autore trova le canzoni dove compare tra più autori', () => {
     expect(filterAndGroup(songs, { ...none, author: 'De Luca' }).filtered.map((x) => x.id)).toEqual(['1'])

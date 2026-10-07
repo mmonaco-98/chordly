@@ -12,6 +12,7 @@ import {
   filtersFromParams,
   filtersToParams,
   uniqueAuthors,
+  uniqueTags,
   type ListFilters,
 } from "../utils/listGroups";
 
@@ -39,10 +40,6 @@ export function SongList() {
   const { playlists, createPlaylist, deletePlaylist, reorderPlaylists } = usePlaylists();
 
   const deferredQuery = useDeferredValue(query);
-  const allTags = useMemo(
-    () => [...new Set(songs.flatMap((s) => s.tags ?? []))].sort(),
-    [songs],
-  );
   const { filtered, groups } = useMemo(
     () => filterAndGroup(songs, { ...filters, query: deferredQuery }),
     [songs, filters, deferredQuery],
@@ -55,8 +52,8 @@ export function SongList() {
     [songs],
   );
   const tagOptions = useMemo(
-    () => allTags.map((t) => ({ value: t, label: labelForTag(t) })),
-    [allTags],
+    () => uniqueTags(songs).map((t) => ({ value: t, label: labelForTag(t) })),
+    [songs],
   );
   const navState = useMemo(
     () => ({ source: "list" as const, ...filters }),

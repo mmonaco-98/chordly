@@ -23,9 +23,18 @@ export function filtersToParams({ query, author, tag, inText }: ListFilters): UR
   return params
 }
 
+function sortByCount(values: string[]): string[] {
+  const counts = new Map<string, number>()
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1)
+  return [...counts.keys()].sort((a, b) => counts.get(b)! - counts.get(a)! || a.localeCompare(b, 'it'))
+}
+
 export function uniqueAuthors(songs: Song[]): string[] {
-  const authors = new Set(songs.flatMap((s) => resolveAuthors(s.authors, s.artist)))
-  return [...authors].sort((a, b) => a.localeCompare(b, 'it'))
+  return sortByCount(songs.flatMap((s) => resolveAuthors(s.authors, s.artist)))
+}
+
+export function uniqueTags(songs: Song[]): string[] {
+  return sortByCount(songs.flatMap((s) => s.tags ?? []))
 }
 
 const lyricsCache = new WeakMap<Song, string>()
