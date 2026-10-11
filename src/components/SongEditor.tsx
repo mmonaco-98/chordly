@@ -203,10 +203,13 @@ export function SongEditor() {
     const textMax = textarea.scrollHeight - textarea.clientHeight
     const paneMax = pane.scrollHeight - pane.clientHeight
     const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight)
+    const anchors = previewAnchors(pane)
     const target =
       textarea.scrollTop <= 0 ? 0
       : textarea.scrollTop >= textMax - 1 ? paneMax
-      : lineToY(previewAnchors(pane), textarea.scrollTop / lineHeight)
+      // Senza ancore (mappa non allineata al testo) si scorre in proporzione.
+      : anchors.length === 0 ? (textarea.scrollTop / textMax) * paneMax
+      : lineToY(anchors, textarea.scrollTop / lineHeight)
     ignoreScroll.current.preview = performance.now() + ECHO_MS
     pane.scrollTop = target
   }
@@ -219,10 +222,12 @@ export function SongEditor() {
     const textMax = textarea.scrollHeight - textarea.clientHeight
     const paneMax = pane.scrollHeight - pane.clientHeight
     const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight)
+    const anchors = previewAnchors(pane)
     const target =
       pane.scrollTop <= 0 ? 0
       : pane.scrollTop >= paneMax - 1 ? textMax
-      : yToLine(previewAnchors(pane), pane.scrollTop) * lineHeight
+      : anchors.length === 0 ? (pane.scrollTop / paneMax) * textMax
+      : yToLine(anchors, pane.scrollTop) * lineHeight
     ignoreScroll.current.text = performance.now() + ECHO_MS
     textarea.scrollTop = target
   }

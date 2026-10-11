@@ -26,6 +26,15 @@ const SAMPLES: Record<string, string> = {
   'accordo con testo vuoto in mezzo': '[A]a [B] b',
   tabulazione: '[A]a\tb',
   apostrofo: "[A]l'ho visto",
+  'direttiva con accordi sulla stessa riga': '{comment: Intro:} [D]   [Gm]\n[A]x',
+  'direttiva attaccata agli accordi': '{comment: Intro:}[F]   [C]',
+  'direttiva con testo libero': '{comment: x} testo libero',
+  'direttiva preceduta da spazio': ' {end_of_chorus}\n[A]x',
+  'commento con rientro': ' # nota\n[A]x',
+  'annotazione a metà testo': '[E]che è ve[*7]nuta giù dal cie[A]lo.',
+  'annotazione a fine riga': '[C]cammineremo insieme a [D]Te.   [*7]',
+  'annotazione sola': '[*cambio accordi]',
+  'annotazione dopo testo': 'a[*x]b c',
 }
 
 describe('buildSourceMap', () => {
@@ -52,6 +61,14 @@ describe('buildSourceMap', () => {
     expect(first.chord).toBe('A')
     expect(rest.chord).toBe('')
     expect(src.slice(rest.lyricStart, rest.lyricEnd)).toBe('bello e brutto')
+  })
+
+  it('un\'annotazione è una colonna senza accordo e il suo testo non si divide', () => {
+    const src = 've[*7]nuta giù'
+    const pairs = buildSourceMap(src)
+    expect(pairs).toHaveLength(2)
+    expect(pairs[1].chord).toBe('')
+    expect(src.slice(pairs[1].lyricStart, pairs[1].lyricEnd)).toBe('nuta giù')
   })
 
   it('ignora direttive e commenti', () => {
