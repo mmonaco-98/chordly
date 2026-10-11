@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useEffect } from "react";
 import ChordSheetJS from "chordsheetjs";
 import { convertChord } from "../utils/convertChord";
 import type { ChordNotation } from "../utils/convertChord";
@@ -9,10 +9,49 @@ interface Props {
   content: string;
   notation?: ChordNotation;
   hideBass?: boolean;
+  /** Se false, il tocco sugli accordi non apre il diagramma. */
+  interactive?: boolean;
+  /** Numero di coppie accordo/testo nel sorgente: abilita i tap solo se coincide con le colonne renderizzate. */
+  pairCount?: number;
+  onChordTap?: (pairIndex: number, rect: DOMRect) => void;
+  onLyricsTap?: (pairIndex: number, offset: number) => void;
 }
 
-function processHtml(html: string, notation: ChordNotation, hideBass: boolean): string {
+/** Offset del punto (x, y) dentro il testo di `el`, in caratteri. */
+function caretOffsetIn(el: HTMLElement, x: number, y: number): number {
+  const doc = document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+  };
+  let node: Node | null = null;
+  let offset = 0;
+  if (doc.caretPositionFromPoint) {
+    const pos = doc.caretPositionFromPoint(x, y);
+    if (pos) ({ offsetNode: node, offset } = pos);
+  } else if (document.caretRangeFromPoint) {
+    const range = document.caretRangeFromPoint(x, y);
+    if (range) ({ startContainer: node, startOffset: offset } = range);
+  }
+  if (!node || !el.contains(node)) return 0;
+  const before = document.createRange();
+  before.setStart(el, 0);
+  before.setEnd(node, offset);
+  return before.toString().length;
+}
+
+function processHtml(
+  html: string,
+  notation: ChordNotation,
+  hideBass: boolean,
+  pairCount?: number,
+): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
+
+  if (pairCount !== undefined) {
+    const columns = doc.querySelectorAll<HTMLElement>(".row > .column");
+    if (columns.length === pairCount) {
+      columns.forEach((col, i) => col.setAttribute("data-pair", String(i)));
+    }
+  }
 
   doc.querySelectorAll(".row").forEach((row) => {
     const cols = Array.from(
@@ -82,9 +121,14 @@ function processHtml(html: string, notation: ChordNotation, hideBass: boolean): 
 
 const LABEL_OFFSET = 16;
 
-export function ChordSheet({ content, notation = "international", hideBass = false }: Props) {
+export function ChordSheet({ content, notation = "international", hideBass = false,
+  interactive = true,
+  pairCount,
+  onChordTap,
+  onLyricsTap,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const tooltip = useChordTooltip(containerRef);
+  const tooltip = useChordTooltip(containerRef, interactive);
 
   let html = "";
   try {
@@ -93,10 +137,37 @@ export function ChordSheet({ content, notation = "international", hideBass = fal
     const formatter = new ChordSheetJS.HtmlDivFormatter({
       normalizeChords: false,
     });
-    html = processHtml(formatter.format(sheet), notation, hideBass);
+    html = processHtml(formatter.format(sheet), notation, hideBass, pairCount);
   } catch {
     html = `<pre>${content}</pre>`;
   }
+
+  const tapHandlers = useRef({ onChordTap, onLyricsTap });
+  tapHandlers.current = { onChordTap, onLyricsTap };
+  const editable = !!(onChordTap || onLyricsTap);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !editable) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const col = target.closest<HTMLElement>(".column[data-pair]");
+      if (!col) return;
+      const index = Number(col.dataset.pair);
+      const chordEl = target.closest<HTMLElement>(".chord");
+      if (chordEl && (chordEl.textContent ?? "").trim()) {
+        tapHandlers.current.onChordTap?.(index, chordEl.getBoundingClientRect());
+        return;
+      }
+      const lyricsEl = col.querySelector<HTMLElement>(".lyrics");
+      if (!lyricsEl) return;
+      tapHandlers.current.onLyricsTap?.(index, caretOffsetIn(lyricsEl, e.clientX, e.clientY));
+    };
+
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, [editable]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -164,7 +235,7 @@ export function ChordSheet({ content, notation = "international", hideBass = fal
     <>
       <div
         ref={containerRef}
-        className={`chord-sheet${notation === "italian" ? " chord-sheet--italian" : ""}`}
+        className={`chord-sheet${notation === "italian" ? " chord-sheet--italian" : ""}${interactive || editable ? "" : " chord-sheet--static"}${editable ? " chord-sheet--editable" : ""}`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {tooltip.isOpen && (

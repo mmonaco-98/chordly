@@ -14,14 +14,14 @@ const INITIAL: TooltipState = {
   position: { x: 0, y: 0 },
 }
 
-export function useChordTooltip(containerRef: RefObject<HTMLDivElement | null>) {
+export function useChordTooltip(containerRef: RefObject<HTMLDivElement | null>, enabled = true) {
   const [state, setState] = useState<TooltipState>(INITIAL)
 
   const close = useCallback(() => setState(INITIAL), [])
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container) return
+    if (!container || !enabled) return
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
@@ -63,7 +63,7 @@ export function useChordTooltip(containerRef: RefObject<HTMLDivElement | null>) 
 
     container.addEventListener('click', handleClick)
     return () => container.removeEventListener('click', handleClick)
-  }, [containerRef])
+  }, [containerRef, enabled])
 
   return { ...state, close }
 }
