@@ -177,9 +177,30 @@ export function TagDrawer({
           </button>
         </div>
         <div className="tag-drawer__content">
+          {/* Canzoni */}
+          <div>
+            <p className="tag-drawer__section-header">Canzoni</p>
+            <ul className="tag-drawer__list" role="list">
+              <li>
+                <button
+                  className="tag-drawer__item"
+                  onClick={() => {
+                    navigate("/song/new");
+                    onClose();
+                  }}
+                >
+                  <Plus size={18} strokeWidth={2} />
+                  Aggiungi canzone
+                </button>
+              </li>
+            </ul>
+          </div>
+
           {/* Playlist personali */}
           <div>
-            <p className="tag-drawer__section-header">Playlist personali</p>
+            <p className="tag-drawer__section-header tag-drawer__section-header--spaced">
+              Playlist personali
+            </p>
             <ul className="tag-drawer__list" role="list">
               {/* Preferiti (sempre visibile) */}
               <li>

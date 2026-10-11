@@ -229,8 +229,11 @@ button {
 .alpha-sidebar {
   position: fixed;
   right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
+  top: calc(var(--list-header-h, 0px) + 0.5rem);
+  bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  margin-block: auto;
+  height: fit-content;
+  max-height: calc(100dvh - var(--list-header-h, 0px) - env(safe-area-inset-bottom) - 1rem);
   width: 2rem;
   display: flex;
   flex-direction: column;
@@ -261,7 +264,8 @@ button {
   color: var(--accent-light);
   line-height: 1;
   width: 100%;
-  min-height: 1.5rem;
+  flex: 0 1 1.5rem;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -282,7 +286,7 @@ button {
 .alpha-sidebar__tooltip {
   position: fixed;
   right: 3.2rem;
-  top: 50vh;
+  top: calc(var(--list-header-h, 0px) + (100dvh - var(--list-header-h, 0px)) / 2);
   transform: translateY(-50%);
   width: 2.5rem;
   height: 2.5rem;

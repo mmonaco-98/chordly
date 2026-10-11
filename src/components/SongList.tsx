@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useDeferredValue, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Menu, Settings, Settings2, Plus, RotateCcw, TextSearch } from "lucide-react";
+import { Menu, Settings, Settings2, RotateCcw, TextSearch } from "lucide-react";
 import { SongCard } from "./SongCard";
 import { FilterCombobox } from "./FilterCombobox";
 import { TagDrawer, labelForTag } from "./TagDrawer";
@@ -36,6 +36,20 @@ export function SongList() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const searchTapToBlur = useTapToBlur();
+  const listRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    const list = listRef.current;
+    if (!header || !list) return;
+    const update = () =>
+      list.style.setProperty("--list-header-h", `${header.getBoundingClientRect().height}px`);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(header);
+    return () => ro.disconnect();
+  }, []);
 
   const { playlists, createPlaylist, deletePlaylist, reorderPlaylists } = usePlaylists();
 
@@ -159,7 +173,7 @@ export function SongList() {
   }, [startHideTimer]);
 
   return (
-    <div className="song-list">
+    <div className="song-list" ref={listRef}>
       <TagDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -169,7 +183,7 @@ export function SongList() {
         onReorderPlaylists={reorderPlaylists}
       />
 
-      <header className="song-list__header">
+      <header className="song-list__header" ref={headerRef}>
         <div className="song-list__header-row">
           <button
             className="icon-btn"
@@ -180,13 +194,6 @@ export function SongList() {
           </button>
           <h1 className="song-list__title">Chordly</h1>
           <div style={{ display: "flex", gap: "0.25rem" }}>
-            <button
-              className="icon-btn"
-              onClick={() => navigate("/song/new")}
-              aria-label="Aggiungi canzone"
-            >
-              <Plus size={20} />
-            </button>
             <button
               className="icon-btn"
               onClick={() => navigate("/settings")}
